@@ -44,7 +44,9 @@ export default function PeminjamanICT() {
     kuantiti: 1, tarikh_pinjam: TODAY, tarikh_pulang: '', catatan: '',
   })
 
-  const [formBarang, setFormBarang] = useState({ nama: '', kod: '', kategori: 'Laptop', kuantiti: 1 })
+  const [formBarang, setFormBarang] = useState({ nama: '', kod: '', kategori: 'Laptop', kuantiti: 1, no_siri: '', lokasi: '', tarikh_terima: '' })
+  const [gambarFile, setGambarFile] = useState(null)
+  const [gambarPreview, setGambarPreview] = useState(null)
   const [qrModal, setQrModal] = useState(null)
   const qrRef = useRef(null)
   const BASE_URL = window.location.origin
@@ -112,11 +114,33 @@ export default function PeminjamanICT() {
   async function tambahBarang() {
     if (!formBarang.nama || !formBarang.kod) { showToast('Sila isi nama dan kod barang!', 'error'); return }
     const qty = parseInt(formBarang.kuantiti) || 1
+
+    let gambar_url = null
+    if (gambarFile) {
+      const filePath = `${Date.now()}-${gambarFile.name}`
+      const { error: upErr } = await supabase.storage.from('ict-gambar').upload(filePath, gambarFile)
+      if (!upErr) {
+        const { data: urlData } = supabase.storage.from('ict-gambar').getPublicUrl(filePath)
+        gambar_url = urlData.publicUrl
+      }
+    }
+
     const { data, error } = await supabase.from('barang_ict').insert([{
-      ...formBarang, kuantiti: qty, tersedia: qty,
+      nama: formBarang.nama,
+      kod: formBarang.kod,
+      kategori: formBarang.kategori,
+      kuantiti: qty,
+      tersedia: qty,
+      no_siri: formBarang.no_siri || null,
+      lokasi: formBarang.lokasi || null,
+      tarikh_terima: formBarang.tarikh_terima || null,
+      gambar_url,
     }]).select().single()
+
     if (error) { showToast('Ralat: ' + error.message, 'error'); return }
-    setFormBarang({ nama: '', kod: '', kategori: 'Laptop', kuantiti: 1 })
+    setFormBarang({ nama: '', kod: '', kategori: 'Laptop', kuantiti: 1, no_siri: '', lokasi: '', tarikh_terima: '' })
+    setGambarFile(null)
+    setGambarPreview(null)
     showToast('✅ Barang berjaya ditambah! Jana QR sekarang.')
     fetchData()
     if (data) setQrModal(data)
@@ -396,14 +420,18 @@ export default function PeminjamanICT() {
         <div className="space-y-3">
           {items.map(item => (
             <div key={item.id}
-              className="bg-white border border-gray-200 rounded-2xl p-4 flex items-center gap-4 cursor-pointer hover:border-gray-600 transition-colors"
+              className="bg-white border border-gray-200 rounded-2xl p-4 flex items-center gap-4 cursor-pointer hover:border-indigo-300 transition-colors"
               onClick={() => setModal({ type: 'item', data: item })}>
-              <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
-                {getKategoriIcon(item.nama)}
+              <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center"
+                style={{ background: '#F3F4F6', border: '1px solid #E5E7EB' }}>
+                {item.gambar_url
+                  ? <img src={item.gambar_url} className="w-full h-full object-cover" />
+                  : <span className="text-2xl">{getKategoriIcon(item.nama)}</span>}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-bold text-gray-900">{item.nama}</div>
                 <div className="text-xs text-gray-500 mt-0.5">{item.kod} • {item.kategori}</div>
+                {item.lokasi && <div className="text-xs text-indigo-500 mt-0.5">📍 {item.lokasi}</div>}
                 <div className="flex items-center gap-2 mt-2">
                   <div className="flex-1 bg-gray-100 rounded-full h-2">
                     <div className={`h-2 rounded-full ${
@@ -457,6 +485,30 @@ export default function PeminjamanICT() {
             {/* Form tambah barang */}
             <div className="bg-gray-100 rounded-2xl p-4 space-y-3">
               <div className="text-xs font-bold text-indigo-400">➕ Tambah Barang Baru</div>
+
+              {/* Gambar upload */}
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Gambar Barang</label>
+                <div className="flex items-center gap-3">
+                  <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center"
+                    style={{ background: '#E5E7EB', border: '1px solid #D1D5DB' }}>
+                    {gambarPreview
+                      ? <img src={gambarPreview} className="w-full h-full object-cover" />
+                      : <span className="text-2xl">📷</span>}
+                  </div>
+                  <label className="flex-1 cursor-pointer">
+                    <div className="w-full bg-white border border-dashed border-indigo-300 rounded-xl px-3 py-2.5 text-xs text-indigo-500 font-semibold text-center hover:bg-indigo-50 transition-colors">
+                      {gambarFile ? gambarFile.name : 'Klik untuk pilih gambar'}
+                    </div>
+                    <input type="file" accept="image/*" className="hidden"
+                      onChange={e => {
+                        const f = e.target.files[0]
+                        if (f) { setGambarFile(f); setGambarPreview(URL.createObjectURL(f)) }
+                      }} />
+                  </label>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">Nama Barang *</label>
@@ -471,6 +523,22 @@ export default function PeminjamanICT() {
                     className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-400" />
                 </div>
               </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">No. Siri</label>
+                  <input value={formBarang.no_siri} onChange={e => setFormBarang(f => ({ ...f, no_siri: e.target.value }))}
+                    placeholder="Contoh: SN123456"
+                    className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-400" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Lokasi / Bilik</label>
+                  <input value={formBarang.lokasi} onChange={e => setFormBarang(f => ({ ...f, lokasi: e.target.value }))}
+                    placeholder="Contoh: Makmal ICT 1"
+                    className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-400" />
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">Kategori</label>
@@ -486,6 +554,14 @@ export default function PeminjamanICT() {
                     className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-indigo-400" />
                 </div>
               </div>
+
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Tarikh Terima</label>
+                <input type="date" value={formBarang.tarikh_terima}
+                  onChange={e => setFormBarang(f => ({ ...f, tarikh_terima: e.target.value }))}
+                  className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-indigo-400" />
+              </div>
+
               <button onClick={tambahBarang}
                 className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-xs font-bold transition-colors">
                 ➕ Tambah Barang
@@ -653,25 +729,49 @@ export default function PeminjamanICT() {
               const rekodBarang = peminjaman.filter(p => p.barang === item.nama && p.status !== 'dipulangkan')
               return (
                 <>
-                  <div className="text-base font-bold text-indigo-400 mb-1">{item.nama}</div>
+                  {/* Gambar */}
+                  {item.gambar_url && (
+                    <div className="w-full h-44 rounded-2xl overflow-hidden mb-4"
+                      style={{ border: '1px solid #E5E7EB' }}>
+                      <img src={item.gambar_url} className="w-full h-full object-cover" />
+                    </div>
+                  )}
+
+                  <div className="text-base font-bold text-indigo-600 mb-0.5">{item.nama}</div>
                   <div className="text-xs text-gray-500 mb-4">{item.kod}</div>
-                  {[['Kategori', item.kategori], ['Jumlah', item.kuantiti + ' unit'], ['Tersedia', item.tersedia + ' unit']].map(([k, v]) => (
-                    <div key={k} className="flex justify-between py-2 border-b border-gray-200">
+
+                  {[
+                    ['Kategori',      item.kategori],
+                    ['No. Siri',      item.no_siri || '—'],
+                    ['Lokasi',        item.lokasi || '—'],
+                    ['Tarikh Terima', item.tarikh_terima ? new Date(item.tarikh_terima).toLocaleDateString('ms-MY', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'],
+                    ['Jumlah',        item.kuantiti + ' unit'],
+                    ['Tersedia',      item.tersedia + ' unit'],
+                  ].map(([k, v]) => (
+                    <div key={k} className="flex justify-between py-2 border-b border-gray-100">
                       <span className="text-xs text-gray-500">{k}</span>
-                      <span className="text-xs font-bold text-gray-900">{v}</span>
+                      <span className="text-xs font-bold text-gray-900 text-right max-w-[55%]">{v}</span>
                     </div>
                   ))}
+
                   {rekodBarang.length > 0 && (
                     <div className="mt-4">
                       <div className="text-xs font-bold text-gray-500 mb-2">Sedang Dipinjam Oleh:</div>
                       {rekodBarang.map(r => (
-                        <div key={r.id} className="bg-gray-100 rounded-xl px-3 py-2 text-xs mb-2 text-gray-700">
-                          <span className="font-bold text-gray-900">{r.peminjam}</span> — {r.kuantiti} unit • Pulang: {r.tarikh_pulang}
+                        <div key={r.id} className="bg-indigo-50 rounded-xl px-3 py-2 text-xs mb-2"
+                          style={{ border: '1px solid #C7D2FE' }}>
+                          <span className="font-bold text-gray-900">{r.peminjam}</span>
+                          {r.jawatan && <span className="text-gray-500"> • {r.jawatan}</span>}
+                          <div className="text-gray-500 mt-0.5">{r.kuantiti} unit {r.tarikh_pulang ? `• Pulang: ${r.tarikh_pulang}` : ''}</div>
                         </div>
                       ))}
                     </div>
                   )}
-                  <button onClick={() => setModal(null)} className="w-full mt-4 border border-gray-200 text-gray-500 py-3 rounded-2xl text-sm font-bold">Tutup</button>
+
+                  <button onClick={() => setModal(null)}
+                    className="w-full mt-4 border border-gray-200 text-gray-500 py-3 rounded-2xl text-sm font-bold">
+                    Tutup
+                  </button>
                 </>
               )
             })()}

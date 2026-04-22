@@ -128,14 +128,22 @@ export default function PinjamPublik() {
         </div>
 
         {/* Barang info */}
-        <div className="rounded-2xl p-4 flex items-center gap-3"
+        <div className="rounded-2xl overflow-hidden"
           style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
-          <div className="text-3xl">{barang.icon ?? '📦'}</div>
-          <div className="flex-1 min-w-0">
-            <div className="text-sm font-bold text-gray-900">{barang.nama}</div>
-            <div className="text-xs text-gray-500">{barang.kod} • {barang.kategori}</div>
-            <div className={`text-xs font-semibold mt-1 ${barang.tersedia > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-              {barang.tersedia > 0 ? `✅ ${barang.tersedia} unit tersedia` : '❌ Tiada stok'}
+          {barang.gambar_url && (
+            <img src={barang.gambar_url} alt={barang.nama}
+              className="w-full h-40 object-cover" />
+          )}
+          <div className="p-4 flex items-center gap-3">
+            {!barang.gambar_url && <div className="text-3xl">📦</div>}
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-bold text-gray-900">{barang.nama}</div>
+              <div className="text-xs text-gray-500">{barang.kod} • {barang.kategori}</div>
+              {barang.lokasi && <div className="text-xs text-indigo-500 mt-0.5">📍 {barang.lokasi}</div>}
+              {barang.no_siri && <div className="text-xs text-gray-400 mt-0.5">S/N: {barang.no_siri}</div>}
+              <div className={`text-xs font-semibold mt-1 ${barang.tersedia > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                {barang.tersedia > 0 ? `✅ ${barang.tersedia} unit tersedia` : '❌ Tiada stok'}
+              </div>
             </div>
           </div>
         </div>
