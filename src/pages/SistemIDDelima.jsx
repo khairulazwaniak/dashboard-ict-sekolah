@@ -7,14 +7,14 @@ import { useAdmin } from '../contexts/AdminContext'
 
 const STATUS_GURU = {
   aktif:       { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Aktif' },
-  tidak_aktif: { bg: 'bg-slate-700',   text: 'text-slate-300',   label: 'Tidak Aktif' },
+  tidak_aktif: { bg: 'bg-gray-100',   text: 'text-gray-600',   label: 'Tidak Aktif' },
   cuti:        { bg: 'bg-amber-100',   text: 'text-amber-700',   label: 'Cuti' },
 }
 
 const STATUS_MURID = {
   aktif:         { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Aktif' },
   kunci:         { bg: 'bg-red-100',     text: 'text-red-700',     label: 'Dikunci' },
-  tukar_sekolah: { bg: 'bg-slate-700',   text: 'text-slate-300',   label: 'Tukar Sekolah' },
+  tukar_sekolah: { bg: 'bg-gray-100',   text: 'text-gray-600',   label: 'Tukar Sekolah' },
   tidak_aktif:   { bg: 'bg-amber-100',   text: 'text-amber-700',   label: 'Tidak Aktif' },
 }
 
@@ -26,7 +26,7 @@ const generatePassword = () => {
 }
 
 function StatusBadge({ status, map }) {
-  const s = map[status] ?? { bg: 'bg-slate-700', text: 'text-slate-300', label: status }
+  const s = map[status] ?? { bg: 'bg-gray-100', text: 'text-gray-600', label: status }
   return <span className={`text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${s.bg} ${s.text}`}>{s.label}</span>
 }
 
@@ -166,11 +166,11 @@ export default function SistemIDDelima() {
       )}
 
       {/* Tab Nav */}
-      <div className="flex gap-1.5 bg-gray-900 rounded-2xl p-1.5 overflow-x-auto scrollbar-hide">
+      <div className="flex gap-1.5 bg-white border border-gray-200 rounded-2xl p-1.5 overflow-x-auto scrollbar-hide">
         {TABS.map(t => (
           <button key={t.id} onClick={() => { setTab(t.id); setCarian('') }}
             className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-              tab === t.id ? 'bg-violet-600 text-white' : 'text-gray-400 hover:text-white'
+              tab === t.id ? 'bg-violet-600 text-white' : 'text-gray-500 hover:text-gray-900'
             }`}>
             {t.label}
           </button>
@@ -187,20 +187,20 @@ export default function SistemIDDelima() {
               { num: stats.dikunci,    label: 'Akaun Dikunci', icon: '🔒',  color: 'text-red-400' },
               { num: stats.tidakAktif, label: 'Tidak Aktif',   icon: '⭕',  color: 'text-gray-400' },
             ].map((s, i) => (
-              <div key={i} className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
+              <div key={i} className="bg-white border border-gray-200 rounded-2xl p-4">
                 <div className="text-2xl mb-2">{s.icon}</div>
                 <div className={`text-3xl font-black ${s.color}`}>{s.num}</div>
-                <div className="text-xs text-gray-400 mt-1">{s.label}</div>
+                <div className="text-xs text-gray-500 mt-1">{s.label}</div>
               </div>
             ))}
           </div>
 
           {stats.dikunci > 0 && (
-            <div className="bg-red-950/40 border border-red-800/50 rounded-2xl p-4 flex gap-3 items-start">
+            <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex gap-3 items-start">
               <span className="text-2xl">🔒</span>
               <div>
-                <div className="text-sm font-bold text-red-300">{stats.dikunci} Akaun Dikunci</div>
-                <div className="text-xs text-red-400/70 mt-1">Terdapat akaun murid yang perlu dibuka kunci.</div>
+                <div className="text-sm font-bold text-red-700">{stats.dikunci} Akaun Dikunci</div>
+                <div className="text-xs text-red-600 mt-1">Terdapat akaun murid yang perlu dibuka kunci.</div>
                 <button onClick={() => { setTab('senarai'); setSubTab('murid') }}
                   className="mt-2 text-xs font-bold text-red-400 underline">
                   Urus sekarang →
@@ -210,15 +210,15 @@ export default function SistemIDDelima() {
           )}
 
           {/* Senarai ID Guru */}
-          <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5">
+          <div className="bg-white border border-gray-200 rounded-2xl p-5">
             <SectionHeader icon="👨‍🏫" title="ID DELIMA Guru" color="text-violet-400"
               onMore={() => { setTab('senarai'); setSubTab('guru') }} />
             <div className="space-y-2.5 mt-4">
               {guru.slice(0, 4).map(g => (
                 <div key={g.id} onClick={() => openModal('guru', g)}
-                  className="flex items-center gap-3 bg-gray-800/50 rounded-xl p-3 cursor-pointer hover:bg-gray-800">
+                  className="flex items-center gap-3 bg-gray-50 rounded-xl p-3 cursor-pointer hover:bg-gray-100">
                   <div className="flex-1 min-w-0">
-                    <div className="text-xs font-bold text-white truncate">{g.nama}</div>
+                    <div className="text-xs font-bold text-gray-900 truncate">{g.nama}</div>
                     <div className="text-xs font-mono text-gray-500">{g.id_delima} • {g.subjek}</div>
                   </div>
                   <StatusBadge status={g.status} map={STATUS_GURU} />
@@ -231,15 +231,15 @@ export default function SistemIDDelima() {
           </div>
 
           {/* Senarai ID Murid */}
-          <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5">
+          <div className="bg-white border border-gray-200 rounded-2xl p-5">
             <SectionHeader icon="🎓" title="ID DELIMA Murid" color="text-purple-400"
               onMore={() => { setTab('senarai'); setSubTab('murid') }} />
             <div className="space-y-2.5 mt-4">
               {murid.slice(0, 4).map(m => (
                 <div key={m.id} onClick={() => openModal('murid', m)}
-                  className="flex items-center gap-3 bg-gray-800/50 rounded-xl p-3 cursor-pointer hover:bg-gray-800">
+                  className="flex items-center gap-3 bg-gray-50 rounded-xl p-3 cursor-pointer hover:bg-gray-100">
                   <div className="flex-1 min-w-0">
-                    <div className="text-xs font-bold text-white truncate">{m.nama}</div>
+                    <div className="text-xs font-bold text-gray-900 truncate">{m.nama}</div>
                     <div className="text-xs font-mono text-gray-500">{m.id_delima} • {m.kelas}</div>
                   </div>
                   <StatusBadge status={m.status} map={STATUS_MURID} />
@@ -256,7 +256,7 @@ export default function SistemIDDelima() {
       {/* ── DAFTAR ── */}
       {tab === 'daftar' && (
         <>
-          <div className="flex gap-2 bg-gray-900 border border-gray-800 rounded-2xl p-1.5">
+          <div className="flex gap-2 bg-white border border-gray-200 rounded-2xl p-1.5">
             {['guru', 'murid'].map(s => (
               <button key={s} onClick={() => setSubTab(s)}
                 className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
@@ -268,7 +268,7 @@ export default function SistemIDDelima() {
           </div>
 
           {subTab === 'guru' ? (
-            <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5 space-y-4">
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-4">
               <div className="text-sm font-bold text-violet-400">📝 Daftar ID DELIMA Guru Baru</div>
               {[
                 { label: 'Nama Penuh *', field: 'nama',       placeholder: 'Nama penuh guru' },
@@ -281,17 +281,17 @@ export default function SistemIDDelima() {
                   <label className="block text-xs font-semibold text-violet-400 mb-1.5">{f.label}</label>
                   <input value={formGuru[f.field]} onChange={e => setFormGuru(p => ({ ...p, [f.field]: e.target.value }))}
                     placeholder={f.placeholder}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500" />
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-violet-400" />
                 </div>
               ))}
               <div>
                 <label className="block text-xs font-semibold text-violet-400 mb-1.5">Gred</label>
                 <select value={formGuru.gred} onChange={e => setFormGuru(p => ({ ...p, gred: e.target.value }))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500">
+                  className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-violet-400">
                   {GRED_LIST.map(g => <option key={g}>{g}</option>)}
                 </select>
               </div>
-              <div className="bg-violet-950/40 border border-violet-800/50 rounded-xl p-3 text-xs text-violet-400">
+              <div className="bg-violet-50 border border-violet-200 rounded-xl p-3 text-xs text-violet-700">
                 ℹ️ ID DELIMA format AIR2024XXX akan dijana automatik.
               </div>
               <button onClick={tambahGuru}
@@ -300,7 +300,7 @@ export default function SistemIDDelima() {
               </button>
             </div>
           ) : (
-            <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5 space-y-4">
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-4">
               <div className="text-sm font-bold text-violet-400">📝 Daftar ID DELIMA Murid Baru</div>
               {[
                 { label: 'Nama Penuh *',          field: 'nama',   placeholder: 'Nama penuh murid' },
@@ -312,18 +312,18 @@ export default function SistemIDDelima() {
                   <label className="block text-xs font-semibold text-violet-400 mb-1.5">{f.label}</label>
                   <input value={formMurid[f.field]} onChange={e => setFormMurid(p => ({ ...p, [f.field]: e.target.value }))}
                     placeholder={f.placeholder}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500" />
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-violet-400" />
                 </div>
               ))}
               <div>
                 <label className="block text-xs font-semibold text-violet-400 mb-1.5">Jantina</label>
                 <select value={formMurid.jantina} onChange={e => setFormMurid(p => ({ ...p, jantina: e.target.value }))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500">
+                  className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-violet-400">
                   <option value="L">Lelaki</option>
                   <option value="P">Perempuan</option>
                 </select>
               </div>
-              <div className="bg-violet-950/40 border border-violet-800/50 rounded-xl p-3 text-xs text-violet-400">
+              <div className="bg-violet-50 border border-violet-200 rounded-xl p-3 text-xs text-violet-700">
                 ℹ️ ID DELIMA format MR2024XXX. Default password: No. Kad (tanpa '-').
               </div>
               <button onClick={tambahMurid}
@@ -339,7 +339,7 @@ export default function SistemIDDelima() {
       {tab === 'senarai' && (
         <>
           <div className="flex items-center gap-2">
-            <div className="flex gap-2 bg-gray-900 border border-gray-800 rounded-2xl p-1.5 flex-1">
+            <div className="flex gap-2 bg-white border border-gray-200 rounded-2xl p-1.5 flex-1">
               {['guru', 'murid'].map(s => (
                 <button key={s} onClick={() => { setSubTab(s); setCarian('') }}
                   className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
@@ -350,7 +350,7 @@ export default function SistemIDDelima() {
               ))}
             </div>
             <button onClick={() => window.print()}
-              className="no-print flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border border-gray-700 text-gray-300 hover:border-violet-500 hover:text-violet-400 transition-colors">
+              className="no-print flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border border-gray-200 text-gray-600 hover:border-violet-500 hover:text-violet-600 transition-colors">
               🖨️ Print Roster
             </button>
           </div>
@@ -359,22 +359,22 @@ export default function SistemIDDelima() {
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-sm">🔍</span>
             <input value={carian} onChange={e => setCarian(e.target.value)}
               placeholder={subTab === 'guru' ? 'Cari nama, ID, no. pekerja...' : 'Cari nama, ID, kelas...'}
-              className="w-full bg-gray-900 border border-gray-700 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500" />
+              className="w-full bg-white border border-gray-200 rounded-xl pl-9 pr-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-violet-400" />
           </div>
 
           <div className="space-y-2.5">
             {(subTab === 'guru' ? filteredGuru : filteredMurid).map(item => (
               <div key={item.id}
-                className="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex items-center gap-3 cursor-pointer hover:border-gray-600 transition-colors"
+                className="bg-white border border-gray-200 rounded-2xl p-4 flex items-center gap-3 cursor-pointer hover:border-gray-600 transition-colors"
                 onClick={() => openModal(subTab, item)}>
                 <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0 ${
-                  subTab === 'guru' ? 'bg-violet-900/40' :
-                  item.jantina === 'P' ? 'bg-pink-900/40' : 'bg-blue-900/40'
+                  subTab === 'guru' ? 'bg-violet-50' :
+                  item.jantina === 'P' ? 'bg-pink-50' : 'bg-blue-50'
                 }`}>
                   {subTab === 'guru' ? '👨‍🏫' : item.jantina === 'P' ? '👧' : '👦'}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-bold text-white">{item.nama}</div>
+                  <div className="text-sm font-bold text-gray-900">{item.nama}</div>
                   <div className="text-xs font-mono text-gray-500 mt-0.5">{item.id_delima}</div>
                   <div className="text-xs text-gray-500">
                     {subTab === 'guru' ? `${item.subjek} • ${item.gred} • ${item.no_pekerja}` : `${item.kelas} • ${item.no_kad}`}
@@ -396,7 +396,7 @@ export default function SistemIDDelima() {
       {/* ── ADMIN ── */}
       {tab === 'admin' && (
         <AdminGate>
-          <div className="flex gap-2 bg-gray-900 border border-gray-800 rounded-2xl p-1.5">
+          <div className="flex gap-2 bg-white border border-gray-200 rounded-2xl p-1.5">
             {['guru', 'murid'].map(s => (
               <button key={s} onClick={() => setSubTab(s)}
                 className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
@@ -407,15 +407,15 @@ export default function SistemIDDelima() {
             ))}
           </div>
 
-          <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5">
+          <div className="bg-white border border-gray-200 rounded-2xl p-5">
             <SectionHeader icon={subTab === 'guru' ? '👨‍🏫' : '🎓'}
               title={subTab === 'guru' ? 'Semua Guru' : 'Semua Murid'}
               color="text-violet-400" />
             <div className="space-y-2.5 mt-4">
               {(subTab === 'guru' ? guru : murid).map(item => (
-                <div key={item.id} className="flex items-center gap-3 bg-gray-800/50 rounded-xl p-3">
+                <div key={item.id} className="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
                   <div className="flex-1 min-w-0 cursor-pointer" onClick={() => openModal(subTab, item)}>
-                    <div className="text-xs font-bold text-white truncate">{item.nama}</div>
+                    <div className="text-xs font-bold text-gray-900 truncate">{item.nama}</div>
                     <div className="text-xs font-mono text-gray-500">{item.id_delima}</div>
                   </div>
                   <StatusBadge status={item.status} map={subTab === 'guru' ? STATUS_GURU : STATUS_MURID} />
@@ -437,15 +437,15 @@ export default function SistemIDDelima() {
       {modal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center"
           onClick={e => e.target === e.currentTarget && setModal(null)}>
-          <div className="bg-gray-900 border border-gray-800 rounded-t-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
-            <div className="w-10 h-1 bg-gray-700 rounded-full mx-auto mb-5" />
+          <div className="bg-white border border-gray-200 rounded-t-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
+            <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-5" />
 
             {modal.jenis === 'guru' && (() => {
               const g = modal.data
               return (
                 <>
                   <div className="flex items-center gap-3 mb-5">
-                    <div className="w-14 h-14 bg-violet-900/40 rounded-2xl flex items-center justify-center text-3xl">👨‍🏫</div>
+                    <div className="w-14 h-14 bg-violet-50 rounded-2xl flex items-center justify-center text-3xl">👨‍🏫</div>
                     <div>
                       <div className="text-base font-bold text-violet-400">{g.nama}</div>
                       <div className="font-mono text-xs text-gray-500 mt-0.5">{g.id_delima}</div>
@@ -453,39 +453,39 @@ export default function SistemIDDelima() {
                   </div>
                   {[['No. Pekerja', g.no_pekerja], ['E-mel', g.email], ['No. Tel', g.no_tel || '—'],
                     ['Subjek', g.subjek], ['Gred', g.gred], ['Login Terakhir', g.last_login]].map(([k, v]) => (
-                    <div key={k} className="flex justify-between py-2 border-b border-gray-800">
+                    <div key={k} className="flex justify-between py-2 border-b border-gray-200">
                       <span className="text-xs text-gray-500">{k}</span>
-                      <span className="text-xs font-bold text-white">{v}</span>
+                      <span className="text-xs font-bold text-gray-900">{v}</span>
                     </div>
                   ))}
-                  <div className="flex justify-between py-2 border-b border-gray-800">
+                  <div className="flex justify-between py-2 border-b border-gray-200">
                     <span className="text-xs text-gray-500">Status</span>
                     <StatusBadge status={g.status} map={STATUS_GURU} />
                   </div>
 
                   {/* Admin-only controls */}
-                  {isAdmin && <div className="mt-4 bg-gray-800 rounded-2xl p-4">
+                  {isAdmin && <div className="mt-4 bg-gray-100 rounded-2xl p-4">
                     <div className="text-xs font-bold text-violet-400 mb-3 flex items-center gap-2">🔐 Pengurusan Kata Laluan</div>
                     <div className="space-y-2.5 mb-3">
                       <div>
-                        <label className="block text-xs text-gray-400 mb-1">Password Baru</label>
+                        <label className="block text-xs text-gray-500 mb-1">Password Baru</label>
                         <div className="relative">
                           <input type={pwForm.show ? 'text' : 'password'} value={pwForm.baru}
                             onChange={e => setPwForm(f => ({ ...f, baru: e.target.value }))}
                             placeholder="Masukkan password baru"
-                            className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 pr-10 text-sm text-white focus:outline-none focus:border-violet-500" />
+                            className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 pr-10 text-sm text-gray-900 focus:outline-none focus:border-violet-400" />
                           <button onClick={() => setPwForm(f => ({ ...f, show: !f.show }))}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
                             {pwForm.show ? '🙈' : '👁️'}
                           </button>
                         </div>
                       </div>
                       <div>
-                        <label className="block text-xs text-gray-400 mb-1">Sahkan Password</label>
+                        <label className="block text-xs text-gray-500 mb-1">Sahkan Password</label>
                         <input type={pwForm.show ? 'text' : 'password'} value={pwForm.sahkan}
                           onChange={e => setPwForm(f => ({ ...f, sahkan: e.target.value }))}
                           placeholder="Ulang password baru"
-                          className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500" />
+                          className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-violet-400" />
                       </div>
                       {pwForm.baru && pwForm.sahkan && (
                         <div className={`text-xs font-semibold ${pwForm.baru === pwForm.sahkan ? 'text-emerald-400' : 'text-red-400'}`}>
@@ -505,7 +505,7 @@ export default function SistemIDDelima() {
                         💾 Simpan Password
                       </button>
                       <button onClick={() => resetPassword('guru', g.id)}
-                        className="px-4 bg-gray-700 text-gray-300 py-2.5 rounded-xl text-xs font-bold hover:bg-gray-600">
+                        className="px-4 bg-gray-100 text-gray-600 py-2.5 rounded-xl text-xs font-bold hover:bg-gray-200">
                         🔑 Reset
                       </button>
                     </div>
@@ -522,7 +522,7 @@ export default function SistemIDDelima() {
                       )}
                       {g.status !== 'tidak_aktif' && (
                         <button onClick={() => toggleStatus('guru', g.id, 'tidak_aktif')}
-                          className="px-4 py-2 bg-gray-700 text-gray-300 rounded-xl text-xs font-bold hover:bg-gray-600">
+                          className="px-4 py-2 bg-gray-100 text-gray-600 rounded-xl text-xs font-bold hover:bg-gray-200">
                           ⭕ Nyahaktif
                         </button>
                       )}
@@ -542,7 +542,7 @@ export default function SistemIDDelima() {
                     </button>
                   )}
                   <button onClick={() => setModal(null)}
-                    className="w-full mt-3 border border-gray-700 text-gray-400 py-3 rounded-2xl text-sm font-bold">
+                    className="w-full mt-3 border border-gray-200 text-gray-500 py-3 rounded-2xl text-sm font-bold">
                     Tutup
                   </button>
                 </>
@@ -554,7 +554,7 @@ export default function SistemIDDelima() {
               return (
                 <>
                   <div className="flex items-center gap-3 mb-5">
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl ${m.jantina === 'P' ? 'bg-pink-900/40' : 'bg-blue-900/40'}`}>
+                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl ${m.jantina === 'P' ? 'bg-pink-50' : 'bg-blue-50'}`}>
                       {m.jantina === 'P' ? '👧' : '👦'}
                     </div>
                     <div>
@@ -564,12 +564,12 @@ export default function SistemIDDelima() {
                   </div>
                   {[['No. Kad', m.no_kad], ['E-mel', m.email], ['Kelas', m.kelas],
                     ['Jantina', m.jantina === 'L' ? 'Lelaki' : 'Perempuan'], ['Login Terakhir', m.last_login]].map(([k, v]) => (
-                    <div key={k} className="flex justify-between py-2 border-b border-gray-800">
+                    <div key={k} className="flex justify-between py-2 border-b border-gray-200">
                       <span className="text-xs text-gray-500">{k}</span>
-                      <span className="text-xs font-bold text-white">{v}</span>
+                      <span className="text-xs font-bold text-gray-900">{v}</span>
                     </div>
                   ))}
-                  <div className="flex justify-between py-2 border-b border-gray-800">
+                  <div className="flex justify-between py-2 border-b border-gray-200">
                     <span className="text-xs text-gray-500">Status</span>
                     <StatusBadge status={m.status} map={STATUS_MURID} />
                   </div>
@@ -591,7 +591,7 @@ export default function SistemIDDelima() {
                       )}
                       {m.status !== 'tukar_sekolah' && (
                         <button onClick={() => toggleStatus('murid', m.id, 'tukar_sekolah')}
-                          className="px-4 py-2 bg-gray-700 text-gray-300 rounded-xl text-xs font-bold">
+                          className="px-4 py-2 bg-gray-100 text-gray-600 rounded-xl text-xs font-bold">
                           🏫 Tukar Sekolah
                         </button>
                       )}
@@ -605,7 +605,7 @@ export default function SistemIDDelima() {
                     </button>
                   )}
                   <button onClick={() => setModal(null)}
-                    className="w-full mt-3 border border-gray-700 text-gray-400 py-3 rounded-2xl text-sm font-bold">
+                    className="w-full mt-3 border border-gray-200 text-gray-500 py-3 rounded-2xl text-sm font-bold">
                     Tutup
                   </button>
                 </>

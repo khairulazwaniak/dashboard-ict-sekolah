@@ -174,11 +174,11 @@ export default function PeminjamanICT() {
       )}
 
       {/* Tab Nav */}
-      <div className="flex gap-1.5 bg-gray-900 rounded-2xl p-1.5 overflow-x-auto scrollbar-hide">
+      <div className="flex gap-1.5 bg-white border border-gray-200 rounded-2xl p-1.5 overflow-x-auto scrollbar-hide">
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-              tab === t.id ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white'
+              tab === t.id ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:text-gray-900'
             }`}>
             {t.label}
           </button>
@@ -195,42 +195,42 @@ export default function PeminjamanICT() {
               { num: stats.lewat,          label: 'Lewat Pulang',   color: 'text-red-400' },
               { num: stats.dipulangkan,    label: 'Dipulangkan',    color: 'text-emerald-400' },
             ].map((s, i) => (
-              <div key={i} className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
+              <div key={i} className="bg-white border border-gray-200 rounded-2xl p-4">
                 <div className={`text-3xl font-black ${s.color}`}>{s.num}</div>
-                <div className="text-xs text-gray-400 mt-1">{s.label}</div>
+                <div className="text-xs text-gray-500 mt-1">{s.label}</div>
               </div>
             ))}
           </div>
 
           {stats.lewat > 0 && (
-            <div className="bg-red-950/40 border border-red-800/50 rounded-2xl p-4 flex gap-3 items-start">
+            <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex gap-3 items-start">
               <span className="text-2xl">🚨</span>
               <div>
-                <div className="text-sm font-bold text-red-300">{stats.lewat} Peminjaman Lewat!</div>
-                <div className="text-xs text-red-400/70 mt-1">Sila hubungi peminjam untuk pulangkan barang segera.</div>
+                <div className="text-sm font-bold text-red-700">{stats.lewat} Peminjaman Lewat!</div>
+                <div className="text-xs text-red-600 mt-1">Sila hubungi peminjam untuk pulangkan barang segera.</div>
               </div>
             </div>
           )}
 
           {/* Inventori ringkas */}
-          <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5">
+          <div className="bg-white border border-gray-200 rounded-2xl p-5">
             <SectionHeader icon="📦" title="Status Inventori" color="text-indigo-400" />
             <div className="space-y-3 mt-4">
               {items.map(item => (
                 <div key={item.id} className="flex items-center gap-3">
-                  <div className="w-9 h-9 bg-gray-800 rounded-xl flex items-center justify-center text-lg flex-shrink-0">
+                  <div className="w-9 h-9 bg-gray-100 rounded-xl flex items-center justify-center text-lg flex-shrink-0">
                     {getKategoriIcon(item.nama)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-xs font-bold text-white truncate">{item.nama}</div>
-                    <div className="w-full bg-gray-800 rounded-full h-1.5 mt-1.5">
+                    <div className="text-xs font-bold text-gray-900 truncate">{item.nama}</div>
+                    <div className="w-full bg-gray-100 rounded-full h-1.5 mt-1.5">
                       <div className={`h-1.5 rounded-full ${
                         item.tersedia === 0 ? 'bg-red-400' : item.tersedia < item.kuantiti / 2 ? 'bg-amber-400' : 'bg-emerald-400'
                       }`}
                         style={{ width: `${(item.tersedia / item.kuantiti) * 100}%` }} />
                     </div>
                   </div>
-                  <div className="text-xs font-bold text-gray-400 flex-shrink-0">
+                  <div className="text-xs font-bold text-gray-500 flex-shrink-0">
                     {item.tersedia}/{item.kuantiti}
                   </div>
                 </div>
@@ -242,18 +242,18 @@ export default function PeminjamanICT() {
           </div>
 
           {/* Terkini */}
-          <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5">
+          <div className="bg-white border border-gray-200 rounded-2xl p-5">
             <SectionHeader icon="📋" title="Peminjaman Terkini" color="text-indigo-400"
               onMore={() => setTab('senarai')} />
             <div className="space-y-2.5 mt-4">
               {peminjaman.slice(0, 4).map(p => {
                 const s = STATUS_CONFIG[p.status] ?? STATUS_CONFIG.dipinjam
                 return (
-                  <div key={p.id} className="flex items-center gap-3 bg-gray-800/50 rounded-xl p-3 cursor-pointer hover:bg-gray-800"
+                  <div key={p.id} className="flex items-center gap-3 bg-gray-50 rounded-xl p-3 cursor-pointer hover:bg-gray-100"
                     onClick={() => setModal({ type: 'detail', data: p })}>
                     <div className={`w-2 h-2 rounded-full flex-shrink-0 ${s.dot}`} />
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs font-semibold text-white truncate">{p.peminjam}</div>
+                      <div className="text-xs font-semibold text-gray-900 truncate">{p.peminjam}</div>
                       <div className="text-xs text-gray-500 truncate">{p.barang} • Pulang: {p.tarikh_pulang}</div>
                     </div>
                     <span className={`text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${s.bg} ${s.text}`}>{s.label}</span>
@@ -267,7 +267,7 @@ export default function PeminjamanICT() {
 
       {/* ── FORM PINJAM ── */}
       {tab === 'pinjam' && (
-        <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5 space-y-4">
+        <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-4">
           <div className="text-sm font-bold text-indigo-400 flex items-center gap-2">
             <span>📝</span> Borang Peminjaman Baru
           </div>
@@ -280,14 +280,14 @@ export default function PeminjamanICT() {
               <label className="block text-xs font-semibold text-indigo-400 mb-1.5">{f.label}</label>
               <input name={f.name} value={form[f.name]} onChange={handleFormChange}
                 placeholder={f.placeholder}
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500" />
+                className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-400" />
             </div>
           ))}
 
           <div>
             <label className="block text-xs font-semibold text-indigo-400 mb-1.5">Pilih Barang *</label>
             <select name="barang" value={form.barang} onChange={handleFormChange}
-              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+              className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-indigo-400">
               <option value="">-- Pilih Barang --</option>
               {items.filter(i => i.tersedia > 0).map(i => (
                 <option key={i.id} value={i.nama}>{i.nama} (Tersedia: {i.tersedia})</option>
@@ -296,7 +296,7 @@ export default function PeminjamanICT() {
           </div>
 
           {form.kod && (
-            <div className="bg-indigo-950/40 border border-indigo-800/50 rounded-xl px-4 py-2.5 text-xs text-indigo-400 font-semibold">
+            <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-2.5 text-xs text-indigo-700 font-semibold">
               Kod Aset: {form.kod}
             </div>
           )}
@@ -304,19 +304,19 @@ export default function PeminjamanICT() {
           <div>
             <label className="block text-xs font-semibold text-indigo-400 mb-1.5">Kuantiti</label>
             <input name="kuantiti" type="number" min="1" value={form.kuantiti} onChange={handleFormChange}
-              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" />
+              className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-indigo-400" />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-indigo-400 mb-1.5">Tarikh Pinjam</label>
               <input name="tarikh_pinjam" type="date" value={form.tarikh_pinjam} onChange={handleFormChange}
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" />
+                className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-indigo-400" />
             </div>
             <div>
               <label className="block text-xs font-semibold text-indigo-400 mb-1.5">Tarikh Pulang *</label>
               <input name="tarikh_pulang" type="date" value={form.tarikh_pulang} onChange={handleFormChange}
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" />
+                className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-indigo-400" />
             </div>
           </div>
 
@@ -325,7 +325,7 @@ export default function PeminjamanICT() {
             <textarea name="catatan" value={form.catatan} onChange={handleFormChange}
               placeholder="Tujuan peminjaman..."
               rows={3}
-              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 resize-none" />
+              className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-400 resize-none" />
           </div>
 
           <button onClick={submitPeminjaman}
@@ -345,14 +345,14 @@ export default function PeminjamanICT() {
                 className={`px-4 py-1.5 rounded-full text-xs font-bold border whitespace-nowrap transition-all ${
                   filterStatus === s
                     ? 'bg-indigo-600 text-white border-indigo-600'
-                    : 'bg-gray-900 text-gray-400 border-gray-700 hover:border-gray-500'
+                    : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
                 }`}>
                 {s === 'semua' ? 'Semua' : STATUS_CONFIG[s]?.label}
               </button>
             ))}
             </div>
             <button onClick={() => window.print()}
-              className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border border-gray-700 text-gray-300 hover:border-indigo-500 hover:text-indigo-400 transition-colors">
+              className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border border-gray-200 text-gray-600 hover:border-indigo-500 hover:text-indigo-600 transition-colors">
               🖨️ Print
             </button>
           </div>
@@ -362,14 +362,14 @@ export default function PeminjamanICT() {
               const s = STATUS_CONFIG[p.status] ?? STATUS_CONFIG.dipinjam
               return (
                 <div key={p.id}
-                  className="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex items-start gap-3 cursor-pointer hover:border-gray-600 transition-colors"
+                  className="bg-white border border-gray-200 rounded-2xl p-4 flex items-start gap-3 cursor-pointer hover:border-gray-600 transition-colors"
                   onClick={() => setModal({ type: 'detail', data: p })}>
-                  <div className="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center text-xl flex-shrink-0">
+                  <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center text-xl flex-shrink-0">
                     {getKategoriIcon(p.barang)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-bold text-white">{p.peminjam}</div>
-                    <div className="text-xs text-gray-400 mt-0.5 truncate">{p.barang} • {p.kuantiti} unit</div>
+                    <div className="text-sm font-bold text-gray-900">{p.peminjam}</div>
+                    <div className="text-xs text-gray-500 mt-0.5 truncate">{p.barang} • {p.kuantiti} unit</div>
                     <div className="text-xs text-gray-500">📅 {p.tarikh_pinjam} → {p.tarikh_pulang}</div>
                   </div>
                   <span className={`text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${s.bg} ${s.text}`}>{s.label}</span>
@@ -391,16 +391,16 @@ export default function PeminjamanICT() {
         <div className="space-y-3">
           {items.map(item => (
             <div key={item.id}
-              className="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex items-center gap-4 cursor-pointer hover:border-gray-600 transition-colors"
+              className="bg-white border border-gray-200 rounded-2xl p-4 flex items-center gap-4 cursor-pointer hover:border-gray-600 transition-colors"
               onClick={() => setModal({ type: 'item', data: item })}>
-              <div className="w-12 h-12 bg-gray-800 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
+              <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
                 {getKategoriIcon(item.nama)}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-bold text-white">{item.nama}</div>
+                <div className="text-sm font-bold text-gray-900">{item.nama}</div>
                 <div className="text-xs text-gray-500 mt-0.5">{item.kod} • {item.kategori}</div>
                 <div className="flex items-center gap-2 mt-2">
-                  <div className="flex-1 bg-gray-800 rounded-full h-2">
+                  <div className="flex-1 bg-gray-100 rounded-full h-2">
                     <div className={`h-2 rounded-full ${
                       item.tersedia === 0 ? 'bg-red-400' : item.tersedia < item.kuantiti / 2 ? 'bg-amber-400' : 'bg-emerald-400'
                     }`}
@@ -422,16 +422,16 @@ export default function PeminjamanICT() {
       {/* ── ADMIN ── */}
       {tab === 'admin' && (
         <AdminGate>
-          <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5">
+          <div className="bg-white border border-gray-200 rounded-2xl p-5">
             <SectionHeader icon="📋" title="Semua Peminjaman" color="text-indigo-400" />
             <div className="space-y-2.5 mt-4">
               {peminjaman.map(p => {
                 const s = STATUS_CONFIG[p.status] ?? STATUS_CONFIG.dipinjam
                 return (
-                  <div key={p.id} className="flex items-center gap-3 bg-gray-800/50 rounded-xl p-3">
+                  <div key={p.id} className="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
                     <div className={`w-2 h-2 rounded-full flex-shrink-0 ${s.dot}`} />
                     <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setModal({ type: 'detail', data: p })}>
-                      <div className="text-xs font-semibold text-white truncate">{p.peminjam}</div>
+                      <div className="text-xs font-semibold text-gray-900 truncate">{p.peminjam}</div>
                       <div className="text-xs text-gray-500 truncate">{p.barang} • {p.tarikh_pulang}</div>
                     </div>
                     <span className={`text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${s.bg} ${s.text}`}>{s.label}</span>
@@ -446,39 +446,39 @@ export default function PeminjamanICT() {
             </div>
           </div>
 
-          <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5 space-y-4">
+          <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-4">
             <SectionHeader icon="📦" title="Urus Inventori" color="text-indigo-400" />
 
             {/* Form tambah barang */}
-            <div className="bg-gray-800 rounded-2xl p-4 space-y-3">
+            <div className="bg-gray-100 rounded-2xl p-4 space-y-3">
               <div className="text-xs font-bold text-indigo-400">➕ Tambah Barang Baru</div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">Nama Barang *</label>
+                  <label className="block text-xs text-gray-500 mb-1">Nama Barang *</label>
                   <input value={formBarang.nama} onChange={e => setFormBarang(f => ({ ...f, nama: e.target.value }))}
                     placeholder="Contoh: Laptop Acer"
-                    className="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500" />
+                    className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-400" />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">Kod Aset *</label>
+                  <label className="block text-xs text-gray-500 mb-1">Kod Aset *</label>
                   <input value={formBarang.kod} onChange={e => setFormBarang(f => ({ ...f, kod: e.target.value }))}
                     placeholder="Contoh: SK/ICT/001"
-                    className="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500" />
+                    className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-400" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">Kategori</label>
+                  <label className="block text-xs text-gray-500 mb-1">Kategori</label>
                   <select value={formBarang.kategori} onChange={e => setFormBarang(f => ({ ...f, kategori: e.target.value }))}
-                    className="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+                    className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-indigo-400">
                     {KATEGORI_LIST.map(k => <option key={k}>{k}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">Kuantiti</label>
+                  <label className="block text-xs text-gray-500 mb-1">Kuantiti</label>
                   <input type="number" min="1" value={formBarang.kuantiti}
                     onChange={e => setFormBarang(f => ({ ...f, kuantiti: e.target.value }))}
-                    className="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" />
+                    className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-indigo-400" />
                 </div>
               </div>
               <button onClick={tambahBarang}
@@ -490,10 +490,10 @@ export default function PeminjamanICT() {
             {/* Senarai barang */}
             <div className="space-y-2.5">
               {items.map(item => (
-                <div key={item.id} className="flex items-center gap-3 bg-gray-800/50 rounded-xl p-3">
+                <div key={item.id} className="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
                   <div className="text-xl">{getKategoriIcon(item.nama)}</div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-xs font-bold text-white truncate">{item.nama}</div>
+                    <div className="text-xs font-bold text-gray-900 truncate">{item.nama}</div>
                     <div className="text-xs text-gray-500">{item.kod} • {item.tersedia}/{item.kuantiti} tersedia</div>
                   </div>
                   <button onClick={() => deleteBarang(item.id)}
@@ -512,8 +512,8 @@ export default function PeminjamanICT() {
       {modal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center"
           onClick={e => e.target === e.currentTarget && setModal(null)}>
-          <div className="bg-gray-900 border border-gray-800 rounded-t-3xl w-full max-w-lg max-h-[85vh] overflow-y-auto p-6">
-            <div className="w-10 h-1 bg-gray-700 rounded-full mx-auto mb-5" />
+          <div className="bg-white border border-gray-200 rounded-t-3xl w-full max-w-lg max-h-[85vh] overflow-y-auto p-6">
+            <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-5" />
 
             {modal.type === 'detail' && (() => {
               const p = modal.data
@@ -528,12 +528,12 @@ export default function PeminjamanICT() {
                     ['Kod Aset', p.kod], ['Kuantiti', p.kuantiti + ' unit'],
                     ['Tarikh Pinjam', p.tarikh_pinjam], ['Tarikh Pulang', p.tarikh_pulang],
                   ].map(([k, v]) => (
-                    <div key={k} className="flex justify-between py-2 border-b border-gray-800">
+                    <div key={k} className="flex justify-between py-2 border-b border-gray-200">
                       <span className="text-xs text-gray-500">{k}</span>
-                      <span className="text-xs font-bold text-white">{v}</span>
+                      <span className="text-xs font-bold text-gray-900">{v}</span>
                     </div>
                   ))}
-                  {p.catatan && <div className="mt-3 text-xs bg-gray-800 rounded-xl p-3 text-gray-300">{p.catatan}</div>}
+                  {p.catatan && <div className="mt-3 text-xs bg-gray-100 rounded-xl p-3 text-gray-600">{p.catatan}</div>}
                   {(live?.status === 'dipinjam' || live?.status === 'lewat') && (
                     <button onClick={() => pulangBarang(live)}
                       className="w-full mt-4 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 py-3 rounded-2xl text-sm font-bold hover:bg-emerald-500/30">
@@ -546,7 +546,7 @@ export default function PeminjamanICT() {
                       🗑️ Padam Rekod
                     </button>
                   )}
-                  <button onClick={() => setModal(null)} className="w-full mt-2 border border-gray-700 text-gray-400 py-3 rounded-2xl text-sm font-bold">Tutup</button>
+                  <button onClick={() => setModal(null)} className="w-full mt-2 border border-gray-200 text-gray-500 py-3 rounded-2xl text-sm font-bold">Tutup</button>
                 </>
               )
             })()}
@@ -559,22 +559,22 @@ export default function PeminjamanICT() {
                   <div className="text-base font-bold text-indigo-400 mb-1">{item.nama}</div>
                   <div className="text-xs text-gray-500 mb-4">{item.kod}</div>
                   {[['Kategori', item.kategori], ['Jumlah', item.kuantiti + ' unit'], ['Tersedia', item.tersedia + ' unit']].map(([k, v]) => (
-                    <div key={k} className="flex justify-between py-2 border-b border-gray-800">
+                    <div key={k} className="flex justify-between py-2 border-b border-gray-200">
                       <span className="text-xs text-gray-500">{k}</span>
-                      <span className="text-xs font-bold text-white">{v}</span>
+                      <span className="text-xs font-bold text-gray-900">{v}</span>
                     </div>
                   ))}
                   {rekodBarang.length > 0 && (
                     <div className="mt-4">
-                      <div className="text-xs font-bold text-gray-400 mb-2">Sedang Dipinjam Oleh:</div>
+                      <div className="text-xs font-bold text-gray-500 mb-2">Sedang Dipinjam Oleh:</div>
                       {rekodBarang.map(r => (
-                        <div key={r.id} className="bg-gray-800 rounded-xl px-3 py-2 text-xs mb-2 text-gray-300">
-                          <span className="font-bold text-white">{r.peminjam}</span> — {r.kuantiti} unit • Pulang: {r.tarikh_pulang}
+                        <div key={r.id} className="bg-gray-100 rounded-xl px-3 py-2 text-xs mb-2 text-gray-700">
+                          <span className="font-bold text-gray-900">{r.peminjam}</span> — {r.kuantiti} unit • Pulang: {r.tarikh_pulang}
                         </div>
                       ))}
                     </div>
                   )}
-                  <button onClick={() => setModal(null)} className="w-full mt-4 border border-gray-700 text-gray-400 py-3 rounded-2xl text-sm font-bold">Tutup</button>
+                  <button onClick={() => setModal(null)} className="w-full mt-4 border border-gray-200 text-gray-500 py-3 rounded-2xl text-sm font-bold">Tutup</button>
                 </>
               )
             })()}

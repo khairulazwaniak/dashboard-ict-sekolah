@@ -27,10 +27,10 @@ const DONUT_COLORS = ['#4A9EFF', '#2ECC71', '#F5A623', '#E74C3C', '#9B59B6']
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
   return (
-    <div style={{ background: '#1a1d27', border: '1px solid rgba(255,255,255,0.08)' }}
+    <div style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
       className="rounded-xl px-3 py-2 text-xs">
-      <div className="text-gray-400 mb-1">{label}</div>
-      <div className="text-white font-bold">{payload[0].value}</div>
+      <div className="mb-1" style={{ color: '#6B7280' }}>{label}</div>
+      <div className="font-bold" style={{ color: '#111827' }}>{payload[0].value}</div>
     </div>
   )
 }
@@ -91,12 +91,12 @@ export default function DashboardUtama() {
 
   const alerts = [
     pendingTempahan > 0 && {
-      color: '#F5A623', bg: 'rgba(245,166,35,0.08)', border: 'rgba(245,166,35,0.3)',
+      color: '#D97706', bg: '#FFFBEB', border: '#FDE68A',
       icon: '🏫', title: `${pendingTempahan} Tempahan Menunggu Kelulusan`,
       desc: 'Semak dan luluskan permohonan bilik khas.', route: '/tempahan',
     },
     lewatICT > 0 && {
-      color: '#E74C3C', bg: 'rgba(231,76,60,0.08)', border: 'rgba(231,76,60,0.3)',
+      color: '#DC2626', bg: '#FEF2F2', border: '#FECACA',
       icon: '⚠️', title: `${lewatICT} Barang ICT Lewat Dipulangkan`,
       desc: 'Hubungi peminjam untuk pulangkan barang segera.', route: '/ict',
     },
@@ -137,7 +137,7 @@ export default function DashboardUtama() {
     return (
       <Layout badgeCounts={{ tempahan: pendingTempahan, ict: lewatICT }}>
         <div className="flex items-center justify-center h-64">
-          <div className="text-sm animate-pulse" style={{ color: '#8892a4' }}>Memuatkan data...</div>
+          <div className="text-sm animate-pulse" style={{ color: '#6B7280' }}>Memuatkan data...</div>
         </div>
       </Layout>
     )
@@ -154,8 +154,8 @@ export default function DashboardUtama() {
               style={{ background: a.bg, border: `1px solid ${a.border}` }}>
               <span className="text-xl flex-shrink-0">{a.icon}</span>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold text-white">{a.title}</div>
-                <div className="text-xs mt-0.5" style={{ color: '#8892a4' }}>{a.desc}</div>
+                <div className="text-sm font-semibold" style={{ color: '#111827' }}>{a.title}</div>
+                <div className="text-xs mt-0.5" style={{ color: '#6B7280' }}>{a.desc}</div>
               </div>
               <button onClick={() => navigate(a.route)}
                 className="text-xs font-bold px-3 py-1.5 rounded-lg flex-shrink-0 transition-opacity hover:opacity-80"
@@ -171,14 +171,14 @@ export default function DashboardUtama() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {kpiCards.map((k, i) => (
           <div key={i} className="rounded-2xl p-5 transition-all hover:scale-[1.01]"
-            style={{ background: 'var(--bg-card)', border: 'var(--border) solid 1px', boxShadow: 'var(--shadow-card)' }}>
+            style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
             <div className="flex items-start justify-between mb-3">
               <span className="text-2xl">{k.icon}</span>
               <div className="w-2 h-2 rounded-full mt-1" style={{ background: k.color }} />
             </div>
-            <div className="text-3xl font-black text-white" style={{ fontFamily: 'Manrope, Inter, sans-serif' }}>{k.num}</div>
-            <div className="text-xs font-semibold text-white mt-1">{k.label}</div>
-            <div className="text-xs mt-0.5" style={{ color: '#8892a4' }}>{k.sub}</div>
+            <div className="text-3xl font-black" style={{ fontFamily: 'Manrope, Inter, sans-serif', color: '#111827' }}>{k.num}</div>
+            <div className="text-xs font-semibold mt-1" style={{ color: '#374151' }}>{k.label}</div>
+            <div className="text-xs mt-0.5" style={{ color: '#6B7280' }}>{k.sub}</div>
           </div>
         ))}
       </div>
@@ -188,9 +188,9 @@ export default function DashboardUtama() {
 
         {/* Tempahan terkini */}
         <div className="rounded-2xl p-5"
-          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
           <div className="flex items-center justify-between mb-4">
-            <div className="text-sm font-semibold text-white">🏫 Tempahan Terkini</div>
+            <div className="text-sm font-semibold" style={{ color: '#111827' }}>🏫 Tempahan Terkini</div>
             <button onClick={() => navigate('/tempahan')}
               className="text-xs font-semibold hover:text-white transition-colors"
               style={{ color: '#4A9EFF' }}>
@@ -204,11 +204,11 @@ export default function DashboardUtama() {
               const c = colors[t.status] ?? '#F5A623'
               return (
                 <div key={t.id} className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors"
-                  style={{ background: 'rgba(255,255,255,0.03)' }}>
+                  style={{ background: '#F9FAFB' }}>
                   <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: c }} />
                   <div className="flex-1 min-w-0">
                     <div className="text-xs font-semibold text-white truncate">{t.guru}</div>
-                    <div className="text-xs truncate" style={{ color: '#8892a4' }}>{t.bilik} • {t.masa}</div>
+                    <div className="text-xs truncate" style={{ color: '#6B7280' }}>{t.bilik} • {t.masa}</div>
                   </div>
                   <span className="text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0"
                     style={{ background: c + '22', color: c }}>
@@ -218,16 +218,16 @@ export default function DashboardUtama() {
               )
             })}
             {tempahan.length === 0 && (
-              <div className="text-center py-6 text-xs" style={{ color: '#4a5568' }}>Tiada rekod tempahan</div>
+              <div className="text-center py-6 text-xs" style={{ color: '#9CA3AF' }}>Tiada rekod tempahan</div>
             )}
           </div>
         </div>
 
         {/* ICT terkini */}
         <div className="rounded-2xl p-5"
-          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
           <div className="flex items-center justify-between mb-4">
-            <div className="text-sm font-semibold text-white">💻 Peminjaman ICT Terkini</div>
+            <div className="text-sm font-semibold" style={{ color: '#111827' }}>💻 Peminjaman ICT Terkini</div>
             <button onClick={() => navigate('/ict')}
               className="text-xs font-semibold hover:text-white transition-colors"
               style={{ color: '#9B59B6' }}>
@@ -241,11 +241,11 @@ export default function DashboardUtama() {
               const c = colors[p.status] ?? '#4A9EFF'
               return (
                 <div key={p.id} className="flex items-center gap-3 rounded-xl px-3 py-2.5"
-                  style={{ background: 'rgba(255,255,255,0.03)' }}>
+                  style={{ background: '#F9FAFB' }}>
                   <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: c }} />
                   <div className="flex-1 min-w-0">
                     <div className="text-xs font-semibold text-white truncate">{p.peminjam}</div>
-                    <div className="text-xs truncate" style={{ color: '#8892a4' }}>{p.barang} • Pulang: {p.tarikh_pulang}</div>
+                    <div className="text-xs truncate" style={{ color: '#6B7280' }}>{p.barang} • Pulang: {p.tarikh_pulang}</div>
                   </div>
                   <span className="text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0"
                     style={{ background: c + '22', color: c }}>
@@ -255,7 +255,7 @@ export default function DashboardUtama() {
               )
             })}
             {peminjaman.length === 0 && (
-              <div className="text-center py-6 text-xs" style={{ color: '#4a5568' }}>Tiada rekod peminjaman</div>
+              <div className="text-center py-6 text-xs" style={{ color: '#9CA3AF' }}>Tiada rekod peminjaman</div>
             )}
           </div>
         </div>
@@ -294,7 +294,7 @@ export default function DashboardUtama() {
         ].map((s, i) => (
           <div key={i} onClick={() => navigate(s.route)}
             className="rounded-2xl overflow-hidden cursor-pointer transition-all hover:scale-[1.01]"
-            style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-card)' }}>
+            style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
             <div className="p-5" style={{ background: s.gradient }}>
               <div className="flex items-start justify-between">
                 <span className="text-3xl">{s.icon}</span>
@@ -306,8 +306,8 @@ export default function DashboardUtama() {
               style={{ borderTop: '1px solid var(--border)', borderColor: 'rgba(255,255,255,0.06)' }}>
               {s.stats.map((st, j) => (
                 <div key={j} className="text-center px-2">
-                  <div className="text-xl font-black text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{st.num}</div>
-                  <div className="text-xs mt-0.5" style={{ color: '#8892a4' }}>{st.label}</div>
+                  <div className="text-xl font-black" style={{ fontFamily: 'Manrope, sans-serif', color: '#111827' }}>{st.num}</div>
+                  <div className="text-xs mt-0.5" style={{ color: '#6B7280' }}>{st.label}</div>
                 </div>
               ))}
             </div>
@@ -319,11 +319,11 @@ export default function DashboardUtama() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
         <div className="rounded-2xl p-5"
-          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <div className="text-sm font-semibold text-white">Trend Tempahan Bilik</div>
-              <div className="text-xs mt-0.5" style={{ color: '#8892a4' }}>6 bulan lepas</div>
+              <div className="text-sm font-semibold" style={{ color: '#111827' }}>Trend Tempahan Bilik</div>
+              <div className="text-xs mt-0.5" style={{ color: '#6B7280' }}>6 bulan lepas</div>
             </div>
             <span className="text-xl">🏫</span>
           </div>
@@ -335,8 +335,8 @@ export default function DashboardUtama() {
                   <stop offset="95%" stopColor="#4A9EFF" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
-              <XAxis dataKey="label" tick={{ fill: '#8892a4', fontSize: 10 }} axisLine={false} tickLine={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" vertical={false} />
+              <XAxis dataKey="label" tick={{ fill: '#6B7280', fontSize: 10 }} axisLine={false} tickLine={false} />
               <YAxis hide />
               <Tooltip content={<CustomTooltip />} />
               <Area type="monotone" dataKey="count" stroke="#4A9EFF" strokeWidth={2}
@@ -346,11 +346,11 @@ export default function DashboardUtama() {
         </div>
 
         <div className="rounded-2xl p-5"
-          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <div className="text-sm font-semibold text-white">Trend Peminjaman ICT</div>
-              <div className="text-xs mt-0.5" style={{ color: '#8892a4' }}>6 bulan lepas</div>
+              <div className="text-sm font-semibold" style={{ color: '#111827' }}>Trend Peminjaman ICT</div>
+              <div className="text-xs mt-0.5" style={{ color: '#6B7280' }}>6 bulan lepas</div>
             </div>
             <span className="text-xl">💻</span>
           </div>
@@ -362,8 +362,8 @@ export default function DashboardUtama() {
                   <stop offset="95%" stopColor="#9B59B6" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
-              <XAxis dataKey="label" tick={{ fill: '#8892a4', fontSize: 10 }} axisLine={false} tickLine={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" vertical={false} />
+              <XAxis dataKey="label" tick={{ fill: '#6B7280', fontSize: 10 }} axisLine={false} tickLine={false} />
               <YAxis hide />
               <Tooltip content={<CustomTooltip />} />
               <Area type="monotone" dataKey="count" stroke="#9B59B6" strokeWidth={2}
@@ -377,13 +377,13 @@ export default function DashboardUtama() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
         <div className="lg:col-span-2 rounded-2xl p-5"
-          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <div className="text-sm font-semibold text-white">Status Inventori ICT</div>
-              <div className="text-xs mt-0.5" style={{ color: '#8892a4' }}>Tersedia vs Dipinjam</div>
+              <div className="text-sm font-semibold" style={{ color: '#111827' }}>Status Inventori ICT</div>
+              <div className="text-xs mt-0.5" style={{ color: '#6B7280' }}>Tersedia vs Dipinjam</div>
             </div>
-            <div className="flex items-center gap-3 text-xs" style={{ color: '#8892a4' }}>
+            <div className="flex items-center gap-3 text-xs" style={{ color: '#6B7280' }}>
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#4A9EFF] inline-block" />Tersedia</span>
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#F5A623] inline-block" />Dipinjam</span>
             </div>
@@ -391,8 +391,8 @@ export default function DashboardUtama() {
           {ictBarData.length > 0 ? (
             <ResponsiveContainer width="100%" height={160}>
               <BarChart data={ictBarData} barGap={4}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
-                <XAxis dataKey="label" tick={{ fill: '#8892a4', fontSize: 9 }} axisLine={false} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" vertical={false} />
+                <XAxis dataKey="label" tick={{ fill: '#6B7280', fontSize: 9 }} axisLine={false} tickLine={false} />
                 <YAxis hide />
                 <Tooltip content={<CustomTooltip />} />
                 <Bar dataKey="tersedia" fill="#4A9EFF" radius={[4, 4, 0, 0]} />
@@ -400,17 +400,17 @@ export default function DashboardUtama() {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex items-center justify-center h-40 text-xs" style={{ color: '#4a5568' }}>
+            <div className="flex items-center justify-center h-40 text-xs" style={{ color: '#9CA3AF' }}>
               Tiada data inventori
             </div>
           )}
         </div>
 
         <div className="rounded-2xl p-5"
-          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
           <div className="mb-4">
-            <div className="text-sm font-semibold text-white">Pengguna DELIMA</div>
-            <div className="text-xs mt-0.5" style={{ color: '#8892a4' }}>Taburan status</div>
+            <div className="text-sm font-semibold" style={{ color: '#111827' }}>Pengguna DELIMA</div>
+            <div className="text-xs mt-0.5" style={{ color: '#6B7280' }}>Taburan status</div>
           </div>
           {delimaDonut.length > 0 ? (
             <>
@@ -428,7 +428,7 @@ export default function DashboardUtama() {
               <div className="space-y-1.5 mt-2">
                 {delimaDonut.map((d, i) => (
                   <div key={i} className="flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-1.5" style={{ color: '#8892a4' }}>
+                    <span className="flex items-center gap-1.5" style={{ color: '#6B7280' }}>
                       <span className="w-2 h-2 rounded-full flex-shrink-0"
                         style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }} />
                       {d.name}
@@ -439,7 +439,7 @@ export default function DashboardUtama() {
               </div>
             </>
           ) : (
-            <div className="flex items-center justify-center h-40 text-xs" style={{ color: '#4a5568' }}>
+            <div className="flex items-center justify-center h-40 text-xs" style={{ color: '#9CA3AF' }}>
               Tiada data DELIMA
             </div>
           )}

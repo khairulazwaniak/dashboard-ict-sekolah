@@ -192,11 +192,11 @@ export default function TempahanBilik() {
       )}
 
       {/* Tab Nav */}
-      <div className="flex gap-1.5 bg-gray-900 rounded-2xl p-1.5 overflow-x-auto scrollbar-hide">
+      <div className="flex gap-1.5 bg-white border border-gray-200 rounded-2xl p-1.5 overflow-x-auto scrollbar-hide">
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-              tab === t.id ? 'bg-sky-600 text-white' : 'text-gray-400 hover:text-white'
+              tab === t.id ? 'bg-sky-600 text-white' : 'text-gray-500 hover:text-gray-900'
             }`}>
             {t.label}
             {t.id === 'admin' && pendingCount > 0 && (
@@ -216,28 +216,28 @@ export default function TempahanBilik() {
               { num: pendingCount,      label: 'Menunggu Lulus', color: 'text-amber-400' },
               { num: todayCount,        label: 'Tempahan Hari Ini', color: 'text-emerald-400' },
             ].map((s, i) => (
-              <div key={i} className="bg-gray-900 border border-gray-800 rounded-2xl p-4 text-center">
+              <div key={i} className="bg-white border border-gray-200 rounded-2xl p-4 text-center">
                 <div className={`text-3xl font-black ${s.color}`}>{s.num}</div>
-                <div className="text-xs text-gray-400 mt-1">{s.label}</div>
+                <div className="text-xs text-gray-500 mt-1">{s.label}</div>
               </div>
             ))}
           </div>
 
           {/* Room Grid */}
-          <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5">
+          <div className="bg-white border border-gray-200 rounded-2xl p-5">
             <SectionHeader icon="🏫" title="Status Bilik Khas" color="text-sky-400" />
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
               {bilikList.map(b => {
                 const status = getRoomStatus(b.nama)
                 const styles = {
-                  available: 'bg-emerald-950/30 border-emerald-800',
-                  booked:    'bg-red-950/30 border-red-800',
-                  pending:   'bg-amber-950/30 border-amber-800',
+                  available: 'bg-emerald-50 border-emerald-200',
+                  booked:    'bg-red-50 border-red-200',
+                  pending:   'bg-amber-50 border-amber-200',
                 }
                 const badges = {
-                  available: 'bg-emerald-900/60 text-emerald-400',
-                  booked:    'bg-red-900/60 text-red-400',
-                  pending:   'bg-amber-900/60 text-amber-400',
+                  available: 'bg-emerald-100 text-emerald-700',
+                  booked:    'bg-red-100 text-red-700',
+                  pending:   'bg-amber-100 text-amber-700',
                 }
                 const badgeLabel = { available: 'Kosong', booked: 'Ditempah', pending: 'Tunggu' }
                 return (
@@ -245,7 +245,7 @@ export default function TempahanBilik() {
                     className={`border rounded-2xl p-3 cursor-pointer transition-all hover:scale-[1.02] ${styles[status]}`}
                     onClick={() => setTab('tempah')}>
                     <div className="text-2xl mb-2">{b.icon}</div>
-                    <div className="text-xs font-bold text-white leading-tight">{b.nama}</div>
+                    <div className="text-xs font-bold text-gray-900 leading-tight">{b.nama}</div>
                     <div className="text-xs text-gray-500 mt-1">{b.kapasiti}</div>
                     <span className={`text-xs font-bold px-2 py-0.5 rounded-full mt-2 inline-block ${badges[status]}`}>
                       {badgeLabel[status]}
@@ -257,18 +257,18 @@ export default function TempahanBilik() {
           </div>
 
           {/* Terkini */}
-          <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5">
+          <div className="bg-white border border-gray-200 rounded-2xl p-5">
             <SectionHeader icon="📋" title="Tempahan Terkini" color="text-sky-400"
               onMore={() => setTab('senarai')} />
             <div className="space-y-2.5 mt-4">
               {tempahan.slice(0, 4).map(t => {
                 const s = STATUS_CONFIG[t.status] ?? STATUS_CONFIG.pending
                 return (
-                  <div key={t.id} className="flex items-center gap-3 bg-gray-800/50 rounded-xl p-3 cursor-pointer hover:bg-gray-800"
+                  <div key={t.id} className="flex items-center gap-3 bg-gray-50 rounded-xl p-3 cursor-pointer hover:bg-gray-100"
                     onClick={() => setModal(t)}>
                     <div className={`w-2 h-2 rounded-full flex-shrink-0 ${s.dot}`} />
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs font-semibold text-white truncate">{t.guru}</div>
+                      <div className="text-xs font-semibold text-gray-900 truncate">{t.guru}</div>
                       <div className="text-xs text-gray-500 truncate">{t.bilik} • {t.masa}</div>
                     </div>
                     <span className={`text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${s.badge}`}>{s.label}</span>
@@ -289,7 +289,7 @@ export default function TempahanBilik() {
           {/* Print button */}
           <div className="flex justify-end no-print">
             <button onClick={() => window.print()}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border border-gray-700 text-gray-300 hover:border-sky-500 hover:text-sky-400 transition-colors">
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border border-gray-200 text-gray-600 hover:border-sky-500 hover:text-sky-600 transition-colors">
               🖨️ Print Jadual
             </button>
           </div>
@@ -299,7 +299,7 @@ export default function TempahanBilik() {
             <label className="text-xs font-semibold text-sky-400">Pilih Tarikh:</label>
             <input type="date" value={jadualDate}
               onChange={e => setJadualDate(e.target.value)}
-              className="bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500" />
+              className="bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-indigo-400" />
             <span className="text-xs text-gray-500">
               {new Date(jadualDate).toLocaleDateString('ms-MY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
             </span>
@@ -308,28 +308,28 @@ export default function TempahanBilik() {
           {/* Legend */}
           <div className="flex gap-4 text-xs">
             {[
-              { color: 'bg-emerald-900/60 border-emerald-700 text-emerald-400', label: 'Lulus' },
-              { color: 'bg-amber-900/60 border-amber-700 text-amber-400',       label: 'Tunggu' },
-              { color: 'bg-gray-800 border-gray-700 text-gray-500',             label: 'Kosong' },
-              { color: 'bg-blue-950/60 border-blue-800 text-blue-400',          label: 'Rehat' },
+              { color: 'bg-emerald-100 border-emerald-300', label: 'Lulus' },
+              { color: 'bg-amber-100 border-amber-300',     label: 'Tunggu' },
+              { color: 'bg-white border-gray-200',          label: 'Kosong' },
+              { color: 'bg-blue-100 border-blue-300',       label: 'Rehat' },
             ].map(l => (
               <div key={l.label} className="flex items-center gap-1.5">
                 <div className={`w-3 h-3 rounded border ${l.color}`} />
-                <span className="text-gray-400">{l.label}</span>
+                <span className="text-gray-500">{l.label}</span>
               </div>
             ))}
           </div>
 
           {/* Timetable — scroll horizontal */}
-          <div className="overflow-x-auto rounded-2xl border border-gray-800">
+          <div className="overflow-x-auto rounded-2xl border border-gray-200">
             <table className="w-full min-w-[700px] border-collapse text-xs">
               <thead>
-                <tr style={{ background: '#1a1d27' }}>
-                  <th className="p-3 text-left text-gray-400 font-semibold border-b border-r border-gray-800 w-32 sticky left-0" style={{ background: '#1a1d27' }}>
+                <tr style={{ background: '#F9FAFB' }}>
+                  <th className="p-3 text-left text-gray-500 font-semibold border-b border-r border-gray-200 w-32 sticky left-0" style={{ background: '#F9FAFB' }}>
                     Masa
                   </th>
                   {bilikList.map(b => (
-                    <th key={b.nama} className="p-2 text-center text-gray-300 font-semibold border-b border-r border-gray-800 min-w-[100px]">
+                    <th key={b.nama} className="p-2 text-center text-gray-700 font-semibold border-b border-r border-gray-200 min-w-[100px]">
                       <div>{b.icon}</div>
                       <div className="text-xs leading-tight mt-0.5">{b.nama}</div>
                     </th>
@@ -340,7 +340,7 @@ export default function TempahanBilik() {
                 {/* Sesi Pagi header */}
                 <tr style={{ background: 'rgba(74,158,255,0.05)' }}>
                   <td colSpan={bilikList.length + 1}
-                    className="px-3 py-1.5 text-xs font-bold border-b border-gray-800"
+                    className="px-3 py-1.5 text-xs font-bold border-b border-gray-200"
                     style={{ color: '#4A9EFF' }}>
                     ☀️ SESI PAGI
                   </td>
@@ -350,12 +350,12 @@ export default function TempahanBilik() {
                   if (slot.rehat) {
                     return (
                       <tr key="rehat" style={{ background: 'rgba(74,158,255,0.03)' }}>
-                        <td className="px-3 py-2 font-bold border-b border-r border-gray-800 sticky left-0 text-blue-400"
-                          style={{ background: '#0f1117' }}>
+                        <td className="px-3 py-2 font-bold border-b border-r border-gray-200 sticky left-0 text-blue-600"
+                          style={{ background: '#EFF6FF' }}>
                           09:50–10:10
                         </td>
                         <td colSpan={bilikList.length}
-                          className="text-center py-2 border-b border-gray-800 font-bold"
+                          className="text-center py-2 border-b border-gray-200 font-bold"
                           style={{ background: 'rgba(74,158,255,0.05)', color: '#4A9EFF' }}>
                           — WAKTU REHAT —
                         </td>
@@ -373,7 +373,7 @@ export default function TempahanBilik() {
                 {/* Sesi Petang header */}
                 <tr style={{ background: 'rgba(245,166,35,0.05)' }}>
                   <td colSpan={bilikList.length + 1}
-                    className="px-3 py-1.5 text-xs font-bold border-b border-gray-800"
+                    className="px-3 py-1.5 text-xs font-bold border-b border-gray-200"
                     style={{ color: '#F5A623' }}>
                     🌙 SESI PETANG
                   </td>
@@ -393,7 +393,7 @@ export default function TempahanBilik() {
 
       {/* ── FORM TEMPAH ── */}
       {tab === 'tempah' && (
-        <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5 space-y-4">
+        <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-4">
           <div className="text-sm font-bold text-sky-400 flex items-center gap-2">
             <span>📝</span> Borang Tempahan Bilik Khas
           </div>
@@ -406,14 +406,14 @@ export default function TempahanBilik() {
               <input type={f.type} value={form[f.field]}
                 onChange={e => setForm(p => ({ ...p, [f.field]: e.target.value }))}
                 placeholder={f.placeholder}
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-sky-500" />
+                className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-400" />
             </div>
           ))}
 
           <div>
             <label className="block text-xs font-semibold text-sky-400 mb-1.5">Pilih Bilik *</label>
             <select value={form.bilik} onChange={e => setForm(p => ({ ...p, bilik: e.target.value }))}
-              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500">
+              className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-indigo-400">
               <option value="">-- Pilih Bilik --</option>
               {bilikList.map(b => <option key={b.nama}>{b.nama}</option>)}
             </select>
@@ -424,13 +424,13 @@ export default function TempahanBilik() {
               <label className="block text-xs font-semibold text-sky-400 mb-1.5">Tarikh *</label>
               <input type="date" value={form.tarikh} min={TODAY}
                 onChange={e => setForm(p => ({ ...p, tarikh: e.target.value }))}
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500" />
+                className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-indigo-400" />
             </div>
             <div>
               <label className="block text-xs font-semibold text-sky-400 mb-1.5">Masa *</label>
               <select value={form.masa} onChange={e => setForm(p => ({ ...p, masa: e.target.value }))}
-                className={`w-full bg-gray-800 border rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none ${
-                  slotKonflik ? 'border-red-600 focus:border-red-500' : 'border-gray-700 focus:border-sky-500'
+                className={`w-full bg-white border rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none ${
+                  slotKonflik ? 'border-red-600 focus:border-red-500' : 'border-gray-200 focus:border-indigo-400'
                 }`}>
                 <option value="">-- Pilih Masa --</option>
                 {MASA_LIST.map(m => <option key={m}>{m}</option>)}
@@ -452,10 +452,10 @@ export default function TempahanBilik() {
             <textarea value={form.tujuan} onChange={e => setForm(p => ({ ...p, tujuan: e.target.value }))}
               placeholder="Tujuan penggunaan bilik..."
               rows={3}
-              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-sky-500 resize-none" />
+              className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-400 resize-none" />
           </div>
 
-          <div className="bg-sky-950/40 border border-sky-800/50 rounded-xl p-3 text-xs text-sky-400">
+          <div className="bg-sky-50 border border-sky-200 rounded-xl p-3 text-xs text-sky-700">
             ℹ️ Tempahan akan diproses oleh pentadbir dalam masa 24 jam.
           </div>
 
@@ -476,7 +476,7 @@ export default function TempahanBilik() {
                 className={`px-4 py-1.5 rounded-full text-xs font-bold border whitespace-nowrap transition-all ${
                   filterStatus === s
                     ? 'bg-sky-600 text-white border-sky-600'
-                    : 'bg-gray-900 text-gray-400 border-gray-700 hover:border-gray-500'
+                    : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
                 }`}>
                 {s === 'semua' ? 'Semua' : STATUS_CONFIG[s]?.label}
               </button>
@@ -488,12 +488,12 @@ export default function TempahanBilik() {
               const s = STATUS_CONFIG[t.status] ?? STATUS_CONFIG.pending
               return (
                 <div key={t.id}
-                  className="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex items-start gap-3 cursor-pointer hover:border-gray-600 transition-colors"
+                  className="bg-white border border-gray-200 rounded-2xl p-4 flex items-start gap-3 cursor-pointer hover:border-gray-600 transition-colors"
                   onClick={() => setModal(t)}>
                   <div className="w-10 h-10 bg-sky-900/40 rounded-xl flex items-center justify-center text-xl flex-shrink-0">🏫</div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-bold text-white">{t.guru}</div>
-                    <div className="text-xs text-gray-400 mt-0.5">{t.bilik}</div>
+                    <div className="text-sm font-bold text-gray-900">{t.guru}</div>
+                    <div className="text-xs text-gray-500 mt-0.5">{t.bilik}</div>
                     <div className="text-xs text-gray-500 mt-0.5">{t.tarikh} • {t.masa}</div>
                   </div>
                   <span className={`text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${s.badge}`}>{s.label}</span>
@@ -513,7 +513,7 @@ export default function TempahanBilik() {
       {/* ── ADMIN ── */}
       {tab === 'admin' && (
         <AdminGate>
-          <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5">
+          <div className="bg-white border border-gray-200 rounded-2xl p-5">
             <div className="flex items-center justify-between">
               <SectionHeader icon="⏳" title="Menunggu Kelulusan" color="text-amber-400" />
               {pendingCount > 1 && (
@@ -525,12 +525,12 @@ export default function TempahanBilik() {
             </div>
             <div className="space-y-3 mt-4">
               {tempahan.filter(t => t.status === 'pending').map(t => (
-                <div key={t.id} className="bg-gray-800 rounded-2xl p-4">
+                <div key={t.id} className="bg-gray-100 rounded-2xl p-4">
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-amber-900/40 rounded-xl flex items-center justify-center text-xl flex-shrink-0">🏫</div>
+                    <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-xl flex-shrink-0">🏫</div>
                     <div className="flex-1">
-                      <div className="text-sm font-bold text-white">{t.guru}</div>
-                      <div className="text-xs text-gray-400 mt-0.5">{t.bilik}</div>
+                      <div className="text-sm font-bold text-gray-900">{t.guru}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">{t.bilik}</div>
                       <div className="text-xs text-gray-500">{t.tarikh} • {t.masa}</div>
                       {t.tujuan && <div className="text-xs text-gray-500 mt-1 italic">"{t.tujuan}"</div>}
                     </div>
@@ -558,16 +558,16 @@ export default function TempahanBilik() {
           </div>
 
           {/* Semua tempahan */}
-          <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5">
+          <div className="bg-white border border-gray-200 rounded-2xl p-5">
             <SectionHeader icon="📋" title="Semua Tempahan" color="text-sky-400" />
             <div className="space-y-2.5 mt-4">
               {tempahan.map(t => {
                 const s = STATUS_CONFIG[t.status] ?? STATUS_CONFIG.pending
                 return (
-                  <div key={t.id} className="flex items-center gap-3 bg-gray-800/50 rounded-xl p-3">
+                  <div key={t.id} className="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
                     <div className={`w-2 h-2 rounded-full flex-shrink-0 ${s.dot}`} />
                     <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setModal(t)}>
-                      <div className="text-xs font-semibold text-white truncate">{t.guru}</div>
+                      <div className="text-xs font-semibold text-gray-900 truncate">{t.guru}</div>
                       <div className="text-xs text-gray-500 truncate">{t.bilik} • {t.tarikh} • {t.masa}</div>
                     </div>
                     <span className={`text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${s.badge}`}>{s.label}</span>
@@ -585,31 +585,31 @@ export default function TempahanBilik() {
           </div>
 
           {/* Urus Bilik */}
-          <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5 space-y-4">
+          <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-4">
             <SectionHeader icon="🏫" title="Urus Bilik Khas" color="text-sky-400" />
 
             {/* Form tambah bilik */}
-            <div className="bg-gray-800 rounded-2xl p-4 space-y-3">
+            <div className="bg-gray-100 rounded-2xl p-4 space-y-3">
               <div className="text-xs font-bold text-sky-400">➕ Tambah Bilik Baru</div>
               <div>
-                <label className="block text-xs text-gray-400 mb-1">Nama Bilik *</label>
+                <label className="block text-xs text-gray-500 mb-1">Nama Bilik *</label>
                 <input value={formBilik.nama} onChange={e => setFormBilik(f => ({ ...f, nama: e.target.value }))}
                   placeholder="Contoh: Makmal ICT 3"
-                  className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-sky-500" />
+                  className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-400" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">Ikon</label>
+                  <label className="block text-xs text-gray-500 mb-1">Ikon</label>
                   <select value={formBilik.icon} onChange={e => setFormBilik(f => ({ ...f, icon: e.target.value }))}
-                    className="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500">
+                    className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-indigo-400">
                     {ICON_LIST.map(ic => <option key={ic} value={ic}>{ic}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">Kapasiti</label>
+                  <label className="block text-xs text-gray-500 mb-1">Kapasiti</label>
                   <input value={formBilik.kapasiti} onChange={e => setFormBilik(f => ({ ...f, kapasiti: e.target.value }))}
                     placeholder="30 pelajar"
-                    className="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-sky-500" />
+                    className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-400" />
                 </div>
               </div>
               <button onClick={tambahBilik}
@@ -621,10 +621,10 @@ export default function TempahanBilik() {
             {/* Senarai bilik */}
             <div className="space-y-2">
               {bilikList.map(b => (
-                <div key={b.id} className="flex items-center gap-3 bg-gray-800/50 rounded-xl p-3">
+                <div key={b.id} className="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
                   <span className="text-xl">{b.icon}</span>
                   <div className="flex-1 min-w-0">
-                    <div className="text-xs font-bold text-white">{b.nama}</div>
+                    <div className="text-xs font-bold text-gray-900">{b.nama}</div>
                     <div className="text-xs text-gray-500">{b.kapasiti}</div>
                   </div>
                   <button onClick={() => deleteBilik(b.id)}
@@ -642,8 +642,8 @@ export default function TempahanBilik() {
       {modal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center"
           onClick={e => e.target === e.currentTarget && setModal(null)}>
-          <div className="bg-gray-900 border border-gray-800 rounded-t-3xl w-full max-w-lg p-6">
-            <div className="w-10 h-1 bg-gray-700 rounded-full mx-auto mb-5" />
+          <div className="bg-white border border-gray-200 rounded-t-3xl w-full max-w-lg p-6">
+            <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-5" />
             <div className="text-base font-bold text-sky-400 mb-4">Detail Tempahan</div>
             {[
               ['Guru', modal.guru],
@@ -653,9 +653,9 @@ export default function TempahanBilik() {
               ['Tujuan', modal.tujuan || '—'],
               ['Status', STATUS_CONFIG[modal.status]?.label ?? modal.status],
             ].map(([k, v]) => (
-              <div key={k} className="flex justify-between py-2 border-b border-gray-800">
+              <div key={k} className="flex justify-between py-2 border-b border-gray-200">
                 <span className="text-xs text-gray-500">{k}</span>
-                <span className="text-xs font-bold text-white">{v}</span>
+                <span className="text-xs font-bold text-gray-900">{v}</span>
               </div>
             ))}
             {modal.status === 'pending' && isAdmin && (
@@ -677,7 +677,7 @@ export default function TempahanBilik() {
               </button>
             )}
             <button onClick={() => setModal(null)}
-              className="w-full mt-3 border border-gray-700 text-gray-400 py-2.5 rounded-xl text-sm font-bold">
+              className="w-full mt-3 border border-gray-200 text-gray-500 py-2.5 rounded-xl text-sm font-bold">
               Tutup
             </button>
           </div>
@@ -691,8 +691,8 @@ export default function TempahanBilik() {
 function JadualRow({ slot, bilikList, tempahan, tarikh, onBook }) {
   return (
     <tr className="hover:bg-white/[0.02] transition-colors">
-      <td className="px-3 py-2 font-mono font-semibold border-b border-r border-gray-800 sticky left-0 text-gray-300 text-xs"
-        style={{ background: '#0f1117' }}>
+      <td className="px-3 py-2 font-mono font-semibold border-b border-r border-gray-200 sticky left-0 text-gray-600 text-xs"
+        style={{ background: '#FFFFFF' }}>
         <span className="text-gray-600 mr-1">{slot.label}</span>
         {slot.masa}
       </td>
@@ -702,7 +702,7 @@ function JadualRow({ slot, bilikList, tempahan, tarikh, onBook }) {
         )
         if (!booking) {
           return (
-            <td key={bilik.nama} className="p-1 border-b border-r border-gray-800 text-center">
+            <td key={bilik.nama} className="p-1 border-b border-r border-gray-200 text-center">
               <button onClick={() => onBook(bilik.nama, slot.masa)}
                 className="w-full h-8 rounded-lg text-xs text-gray-600 hover:bg-sky-900/30 hover:text-sky-400 transition-all">
                 +
@@ -713,15 +713,15 @@ function JadualRow({ slot, bilikList, tempahan, tarikh, onBook }) {
         const isApproved = booking.status === 'approved'
         const isPending  = booking.status === 'pending'
         return (
-          <td key={bilik.nama} className="p-1 border-b border-r border-gray-800">
+          <td key={bilik.nama} className="p-1 border-b border-r border-gray-200">
             <div className={`rounded-lg px-1.5 py-1 text-center border ${
-              isApproved ? 'bg-emerald-900/40 border-emerald-800 text-emerald-300' :
-              isPending  ? 'bg-amber-900/40 border-amber-800 text-amber-300' :
-                           'bg-red-900/40 border-red-800 text-red-300'
+              isApproved ? 'bg-emerald-50 border-emerald-200 text-emerald-800' :
+              isPending  ? 'bg-amber-50 border-amber-200 text-amber-800' :
+                           'bg-red-50 border-red-200 text-red-800'
             }`}>
               <div className="text-xs font-bold truncate">{booking.guru}</div>
               <div className={`text-xs mt-0.5 ${
-                isApproved ? 'text-emerald-500' : isPending ? 'text-amber-500' : 'text-red-500'
+                isApproved ? 'text-emerald-600' : isPending ? 'text-amber-600' : 'text-red-600'
               }`}>
                 {isApproved ? '✓ Lulus' : isPending ? '⏳ Tunggu' : '✗ Tolak'}
               </div>

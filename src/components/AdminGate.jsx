@@ -9,24 +9,20 @@ export default function AdminGate({ children }) {
 
   const handleLogin = () => {
     const ok = login(form.user, form.pass)
-    if (ok) {
-      setShow(false)
-      setForm({ user: '', pass: '' })
-      setError('')
-    } else {
-      setError('Username atau password salah.')
-    }
+    if (ok) { setShow(false); setForm({ user: '', pass: '' }); setError('') }
+    else setError('Username atau password salah.')
   }
 
   if (isAdmin) {
     return (
       <>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2 text-xs font-bold text-emerald-400">
+        <div className="flex items-center justify-between mb-4 px-1">
+          <div className="flex items-center gap-2 text-xs font-bold" style={{ color: '#059669' }}>
             <span>🔓</span> Mod Admin Aktif
           </div>
           <button onClick={logout}
-            className="text-xs text-gray-500 hover:text-red-400 transition-colors px-3 py-1.5 rounded-lg border border-gray-800 hover:border-red-800">
+            className="text-xs px-3 py-1.5 rounded-xl border transition-colors"
+            style={{ color: '#DC2626', borderColor: '#FECACA', background: '#FEF2F2' }}>
             Log Keluar Admin
           </button>
         </div>
@@ -37,56 +33,56 @@ export default function AdminGate({ children }) {
 
   return (
     <>
-      {/* Prompt login */}
-      <div style={{ background: '#1a1d27', border: '1px solid rgba(255,255,255,0.06)' }}
-        className="rounded-2xl p-6 text-center">
+      <div className="rounded-2xl p-6 text-center"
+        style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
         <div className="text-3xl mb-3">🔐</div>
-        <div className="text-sm font-bold text-white mb-1">Kawasan Admin</div>
-        <div className="text-xs text-gray-500 mb-4">Log masuk sebagai admin untuk mengurus data.</div>
+        <div className="text-sm font-bold mb-1" style={{ color: '#111827' }}>Kawasan Admin</div>
+        <div className="text-xs mb-4" style={{ color: '#6B7280' }}>Log masuk sebagai admin untuk mengurus data.</div>
         <button onClick={() => setShow(true)}
-          style={{ background: 'linear-gradient(135deg, #4A9EFF, #9B59B6)' }}
-          className="px-6 py-2.5 rounded-xl text-sm font-bold text-white hover:opacity-90 transition-opacity">
+          className="px-6 py-2.5 rounded-xl text-sm font-bold text-white hover:opacity-90 transition-opacity"
+          style={{ background: 'linear-gradient(135deg, #4F46E5, #7C3AED)' }}>
           Log Masuk Admin
         </button>
       </div>
 
-      {/* Modal login */}
       {show && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.4)' }}
           onClick={e => e.target === e.currentTarget && setShow(false)}>
-          <div style={{ background: '#1a1d27', border: '1px solid rgba(255,255,255,0.08)' }}
-            className="rounded-2xl p-6 w-full max-w-sm">
-            <div className="text-base font-bold text-white mb-1">Log Masuk Admin</div>
-            <div className="text-xs text-gray-500 mb-5">Masukkan credentials untuk akses penuh.</div>
+          <div className="rounded-2xl p-6 w-full max-w-sm"
+            style={{ background: '#FFFFFF', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+            <div className="text-base font-bold mb-1" style={{ color: '#111827' }}>Log Masuk Admin</div>
+            <div className="text-xs mb-5" style={{ color: '#6B7280' }}>Masukkan credentials untuk akses penuh.</div>
 
             <div className="space-y-3 mb-4">
               <div>
-                <label className="block text-xs font-semibold mb-1.5" style={{ color: '#4A9EFF' }}>Username</label>
+                <label className="block text-xs font-semibold mb-1.5" style={{ color: '#4F46E5' }}>Username</label>
                 <input value={form.user} onChange={e => setForm(f => ({ ...f, user: e.target.value }))}
                   placeholder="admin"
-                  className="w-full rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none"
-                  style={{ background: '#0f1117', border: '1px solid rgba(255,255,255,0.08)' }}
+                  className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none"
+                  style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', color: '#111827' }}
                   onKeyDown={e => e.key === 'Enter' && handleLogin()} />
               </div>
               <div>
-                <label className="block text-xs font-semibold mb-1.5" style={{ color: '#4A9EFF' }}>Password</label>
+                <label className="block text-xs font-semibold mb-1.5" style={{ color: '#4F46E5' }}>Password</label>
                 <input type="password" value={form.pass} onChange={e => setForm(f => ({ ...f, pass: e.target.value }))}
                   placeholder="••••••••"
-                  className="w-full rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none"
-                  style={{ background: '#0f1117', border: '1px solid rgba(255,255,255,0.08)' }}
+                  className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none"
+                  style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', color: '#111827' }}
                   onKeyDown={e => e.key === 'Enter' && handleLogin()} />
               </div>
-              {error && <div className="text-xs text-red-400 font-semibold">{error}</div>}
+              {error && <div className="text-xs font-semibold" style={{ color: '#DC2626' }}>{error}</div>}
             </div>
 
             <div className="flex gap-2">
               <button onClick={handleLogin}
-                style={{ background: 'linear-gradient(135deg, #4A9EFF, #9B59B6)' }}
-                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white hover:opacity-90">
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white hover:opacity-90"
+                style={{ background: 'linear-gradient(135deg, #4F46E5, #7C3AED)' }}>
                 Masuk
               </button>
               <button onClick={() => { setShow(false); setError('') }}
-                className="px-4 py-2.5 rounded-xl text-sm text-gray-400 border border-gray-700 hover:border-gray-500">
+                className="px-4 py-2.5 rounded-xl text-sm font-medium"
+                style={{ background: '#F3F4F6', color: '#374151' }}>
                 Batal
               </button>
             </div>
