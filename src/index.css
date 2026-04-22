@@ -4,6 +4,27 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --bg-primary: #0f1117;
+  --bg-card: #1a1d27;
+  --bg-card-hover: #1e2233;
+  --border: rgba(255,255,255,0.06);
+  --text-primary: #ffffff;
+  --text-secondary: #8892a4;
+  --text-muted: #4a5568;
+  --accent-blue: #4A9EFF;
+  --accent-yellow: #F5A623;
+  --accent-green: #2ECC71;
+  --accent-red: #E74C3C;
+  --accent-purple: #9B59B6;
+  --positive: #27AE60;
+  --negative: #E74C3C;
+  --radius-card: 12px;
+  --radius-sm: 8px;
+  --shadow-card: 0 4px 24px rgba(0,0,0,0.4);
+  --shadow-hover: 0 8px 32px rgba(0,0,0,0.6);
+}
+
 @layer base {
   body {
     @apply antialiased;
@@ -13,7 +34,6 @@
   }
 }
 
-/* Hide scrollbar */
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;

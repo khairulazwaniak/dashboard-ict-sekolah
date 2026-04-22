@@ -2,50 +2,41 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import Layout from '../components/Layout'
-import StatCard from '../components/StatCard'
-import SectionHeader from '../components/SectionHeader'
+import {
+  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
+} from 'recharts'
 
-const TEMPAHAN_STATUS = {
-  approved: { dot: 'bg-emerald-400', badge: 'bg-emerald-100 text-emerald-700', label: 'Lulus' },
-  pending:  { dot: 'bg-amber-400',   badge: 'bg-amber-100 text-amber-700',     label: 'Tunggu' },
-  rejected: { dot: 'bg-red-400',     badge: 'bg-red-100 text-red-700',         label: 'Tolak' },
-}
-const ICT_STATUS = {
-  dipinjam:    { dot: 'bg-blue-400',    badge: 'bg-blue-100 text-blue-700',      label: 'Dipinjam' },
-  lewat:       { dot: 'bg-red-400',     badge: 'bg-red-100 text-red-700',        label: 'Lewat' },
-  dipulangkan: { dot: 'bg-emerald-400', badge: 'bg-emerald-100 text-emerald-700',label: 'Pulang' },
+const MONTHS_MS = ['Jan','Feb','Mac','Apr','Mei','Jun','Jul','Ogs','Sep','Okt','Nov','Dis']
+
+function getMonthlyData(records, dateField = 'created_at', months = 6) {
+  const now = new Date()
+  return Array.from({ length: months }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (months - 1 - i), 1)
+    const label = MONTHS_MS[d.getMonth()]
+    const count = records.filter(r => {
+      const rd = new Date(r[dateField])
+      return rd.getFullYear() === d.getFullYear() && rd.getMonth() === d.getMonth()
+    }).length
+    return { label, count }
+  })
 }
 
-const SISTEM = [
-  {
-    id: 'tempahan',
-    label: 'Tempahan Bilik Khas',
-    icon: '🏫',
-    desc: 'Makmal, Bilik STEM & Bilik Sumber',
-    gradient: 'from-sky-600 to-cyan-500',
-    route: '/tempahan',
-  },
-  {
-    id: 'ict',
-    label: 'Peminjaman Barang ICT',
-    icon: '💻',
-    desc: 'Laptop, Projektor, Tablet & lebih',
-    gradient: 'from-indigo-600 to-violet-500',
-    route: '/ict',
-  },
-  {
-    id: 'delima',
-    label: 'Pengurusan ID DELIMA',
-    icon: '🌺',
-    desc: 'Akaun guru & murid sekolah',
-    gradient: 'from-rose-600 to-pink-500',
-    route: '/delima',
-  },
-]
+const DONUT_COLORS = ['#4A9EFF', '#2ECC71', '#F5A623', '#E74C3C', '#9B59B6']
+
+const CustomTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null
+  return (
+    <div style={{ background: '#1a1d27', border: '1px solid rgba(255,255,255,0.08)' }}
+      className="rounded-xl px-3 py-2 text-xs">
+      <div className="text-gray-400 mb-1">{label}</div>
+      <div className="text-white font-bold">{payload[0].value}</div>
+    </div>
+  )
+}
 
 export default function DashboardUtama() {
   const navigate = useNavigate()
-
   const [loading, setLoading] = useState(true)
   const [tempahan, setTempahan] = useState([])
   const [peminjaman, setPeminjaman] = useState([])
@@ -55,7 +46,6 @@ export default function DashboardUtama() {
 
   useEffect(() => {
     async function fetchAll() {
-      setLoading(true)
       const [t, p, b, g, m] = await Promise.all([
         supabase.from('tempahan_bilik').select('*').order('created_at', { ascending: false }),
         supabase.from('peminjaman_ict').select('*').order('created_at', { ascending: false }),
@@ -73,75 +63,103 @@ export default function DashboardUtama() {
     fetchAll()
   }, [])
 
-  // Derived stats
+  const TODAY = new Date().toISOString().slice(0, 10)
   const pendingTempahan = tempahan.filter(t => t.status === 'pending').length
+  const approvedTempahan = tempahan.filter(t => t.status === 'approved').length
   const lewatICT = peminjaman.filter(p => p.status === 'lewat').length
   const dipinjamICT = peminjaman.filter(p => p.status === 'dipinjam').length
   const guruAktif = guru.filter(g => g.status === 'aktif').length
   const muridAktif = murid.filter(m => m.status === 'aktif').length
+  const todayTempahan = tempahan.filter(t => t.tarikh === TODAY).length
 
-  const bilikUnik = [...new Set(tempahan.map(t => t.bilik))].length || barang.length
+  // Chart data
+  const tempahanTrend = getMonthlyData(tempahan, 'created_at', 6)
+  const peminjamanTrend = getMonthlyData(peminjaman, 'created_at', 6)
+
+  const ictBarData = barang.slice(0, 6).map(b => ({
+    label: b.nama?.length > 10 ? b.nama.slice(0, 10) + '…' : b.nama,
+    tersedia: b.tersedia,
+    dipinjam: b.kuantiti - b.tersedia,
+  }))
+
+  const delimaDonut = [
+    { name: 'Guru Aktif',    value: guruAktif },
+    { name: 'Murid Aktif',   value: muridAktif },
+    { name: 'Akaun Dikunci', value: murid.filter(m => m.status === 'kunci').length },
+    { name: 'Tidak Aktif',   value: [...guru, ...murid].filter(x => x.status === 'tidak_aktif').length },
+  ].filter(d => d.value > 0)
 
   const alerts = [
     pendingTempahan > 0 && {
-      icon: '🏫', color: 'border-l-amber-400 bg-amber-50',
-      title: `${pendingTempahan} Tempahan Menunggu Kelulusan`,
-      desc: 'Semak dan luluskan permohonan bilik khas.',
-      route: '/tempahan',
+      color: '#F5A623', bg: 'rgba(245,166,35,0.08)', border: 'rgba(245,166,35,0.3)',
+      icon: '🏫', title: `${pendingTempahan} Tempahan Menunggu Kelulusan`,
+      desc: 'Semak dan luluskan permohonan bilik khas.', route: '/tempahan',
     },
     lewatICT > 0 && {
-      icon: '⚠️', color: 'border-l-red-400 bg-red-50',
-      title: `${lewatICT} Barang ICT Lewat Dipulangkan`,
-      desc: 'Hubungi peminjam untuk pulangkan barang segera.',
-      route: '/ict',
+      color: '#E74C3C', bg: 'rgba(231,76,60,0.08)', border: 'rgba(231,76,60,0.3)',
+      icon: '⚠️', title: `${lewatICT} Barang ICT Lewat Dipulangkan`,
+      desc: 'Hubungi peminjam untuk pulangkan barang segera.', route: '/ict',
     },
   ].filter(Boolean)
 
-  const sistemStats = {
-    tempahan: [
-      { num: bilikUnik,        label: 'Bilik' },
-      { num: pendingTempahan,  label: 'Menunggu' },
-      { num: tempahan.filter(t => t.tarikh === new Date().toISOString().slice(0, 10)).length, label: 'Hari Ini' },
-    ],
-    ict: [
-      { num: barang.length,   label: 'Jenis' },
-      { num: dipinjamICT,     label: 'Dipinjam' },
-      { num: lewatICT,        label: 'Lewat' },
-    ],
-    delima: [
-      { num: guruAktif,  label: 'Guru' },
-      { num: muridAktif, label: 'Murid' },
-      { num: guru.length + murid.length, label: 'Jumlah' },
-    ],
-  }
+  const kpiCards = [
+    {
+      num: barang.length,
+      label: 'Jenis Barang ICT',
+      sub: `${dipinjamICT} sedang dipinjam`,
+      color: '#4A9EFF',
+      icon: '💻',
+    },
+    {
+      num: pendingTempahan + lewatICT,
+      label: 'Perlu Tindakan',
+      sub: pendingTempahan + lewatICT > 0 ? 'Ada item mendesak' : 'Tiada tindakan perlu',
+      color: pendingTempahan + lewatICT > 0 ? '#E74C3C' : '#2ECC71',
+      icon: '⚡',
+    },
+    {
+      num: guruAktif + muridAktif,
+      label: 'Pengguna DELIMA',
+      sub: `${guruAktif} guru • ${muridAktif} murid`,
+      color: '#9B59B6',
+      icon: '👥',
+    },
+    {
+      num: approvedTempahan,
+      label: 'Tempahan Diluluskan',
+      sub: `${todayTempahan} tempahan hari ini`,
+      color: '#2ECC71',
+      icon: '✅',
+    },
+  ]
 
   if (loading) {
     return (
-      <Layout badgeCounts={{ tempahan: pendingTempahan, ict: lewatICT }} alertCount={alerts.length}>
+      <Layout badgeCounts={{ tempahan: pendingTempahan, ict: lewatICT }}>
         <div className="flex items-center justify-center h-64">
-          <div className="text-gray-400 text-sm animate-pulse">Memuatkan data...</div>
+          <div className="text-sm animate-pulse" style={{ color: '#8892a4' }}>Memuatkan data...</div>
         </div>
       </Layout>
     )
   }
 
   return (
-    <Layout badgeCounts={{ tempahan: pendingTempahan, ict: lewatICT }} alertCount={alerts.length}>
+    <Layout badgeCounts={{ tempahan: pendingTempahan, ict: lewatICT }}>
 
-      {/* Alerts */}
+      {/* ── ALERTS ── */}
       {alerts.length > 0 && (
         <div className="space-y-2.5">
           {alerts.map((a, i) => (
-            <div key={i} className={`border-l-4 rounded-r-2xl p-4 flex items-start gap-3 ${a.color}`}>
-              <span className="text-xl mt-0.5">{a.icon}</span>
-              <div className="flex-1">
-                <div className="text-sm font-bold text-gray-800">{a.title}</div>
-                <div className="text-xs text-gray-500 mt-0.5">{a.desc}</div>
+            <div key={i} className="flex items-center gap-3 rounded-2xl px-4 py-3"
+              style={{ background: a.bg, border: `1px solid ${a.border}` }}>
+              <span className="text-xl flex-shrink-0">{a.icon}</span>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-semibold text-white">{a.title}</div>
+                <div className="text-xs mt-0.5" style={{ color: '#8892a4' }}>{a.desc}</div>
               </div>
-              <button
-                onClick={() => navigate(a.route)}
-                className="text-xs font-bold text-gray-600 border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-white/50 transition-colors flex-shrink-0"
-              >
+              <button onClick={() => navigate(a.route)}
+                className="text-xs font-bold px-3 py-1.5 rounded-lg flex-shrink-0 transition-opacity hover:opacity-80"
+                style={{ background: a.color, color: '#fff' }}>
                 Urus →
               </button>
             </div>
@@ -149,114 +167,287 @@ export default function DashboardUtama() {
         </div>
       )}
 
-      {/* Mega Stats */}
+      {/* ── KPI CARDS ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard num={barang.length + bilikUnik}  label="Jumlah Aset"       icon="📊" color="text-sky-400" />
-        <StatCard num={pendingTempahan + lewatICT} label="Perlu Tindakan"    icon="⚡" color="text-amber-400" />
-        <StatCard num={guruAktif + muridAktif}     label="Pengguna DELIMA"   icon="👥" color="text-rose-400" />
-        <StatCard num={guru.filter(g => g.status === 'aktif').length} label="Guru Aktif" icon="🏆" color="text-emerald-400" />
-      </div>
-
-      {/* 3 Sistem Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {SISTEM.map(s => (
-          <div
-            key={s.id}
-            className="bg-gray-900 border border-gray-800 rounded-3xl overflow-hidden hover:border-gray-600 transition-all cursor-pointer"
-            onClick={() => navigate(s.route)}
-          >
-            <div className={`bg-gradient-to-br ${s.gradient} p-5`}>
-              <div className="flex items-start justify-between">
-                <div className="text-3xl">{s.icon}</div>
-                <span className="text-xs font-bold bg-white/20 text-white px-2.5 py-1 rounded-full">Buka →</span>
-              </div>
-              <div className="mt-3">
-                <div className="text-base font-bold text-white leading-tight">{s.label}</div>
-                <div className="text-xs text-white/70 mt-1">{s.desc}</div>
-              </div>
+        {kpiCards.map((k, i) => (
+          <div key={i} className="rounded-2xl p-5 transition-all hover:scale-[1.01]"
+            style={{ background: 'var(--bg-card)', border: 'var(--border) solid 1px', boxShadow: 'var(--shadow-card)' }}>
+            <div className="flex items-start justify-between mb-3">
+              <span className="text-2xl">{k.icon}</span>
+              <div className="w-2 h-2 rounded-full mt-1" style={{ background: k.color }} />
             </div>
-            <div className="p-4 grid grid-cols-3 divide-x divide-gray-800">
-              {(sistemStats[s.id] ?? []).map((st, i) => (
-                <div key={i} className="text-center px-2">
-                  <div className="text-xl font-black text-white">{st.num}</div>
-                  <div className="text-xs text-gray-500 mt-0.5">{st.label}</div>
-                </div>
-              ))}
-            </div>
+            <div className="text-3xl font-black text-white" style={{ fontFamily: 'Manrope, Inter, sans-serif' }}>{k.num}</div>
+            <div className="text-xs font-semibold text-white mt-1">{k.label}</div>
+            <div className="text-xs mt-0.5" style={{ color: '#8892a4' }}>{k.sub}</div>
           </div>
         ))}
       </div>
 
-      {/* Split: Tempahan terkini + ICT terkini */}
+      {/* ── CHARTS ROW 1: Trend Tempahan + Trend Peminjaman ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+        {/* Area Chart — Tempahan */}
+        <div className="rounded-2xl p-5"
+          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <div className="text-sm font-semibold text-white">Trend Tempahan Bilik</div>
+              <div className="text-xs mt-0.5" style={{ color: '#8892a4' }}>6 bulan lepas</div>
+            </div>
+            <span className="text-xl">🏫</span>
+          </div>
+          <ResponsiveContainer width="100%" height={160}>
+            <AreaChart data={tempahanTrend}>
+              <defs>
+                <linearGradient id="blueGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#4A9EFF" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#4A9EFF" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+              <XAxis dataKey="label" tick={{ fill: '#8892a4', fontSize: 10 }} axisLine={false} tickLine={false} />
+              <YAxis hide />
+              <Tooltip content={<CustomTooltip />} />
+              <Area type="monotone" dataKey="count" stroke="#4A9EFF" strokeWidth={2}
+                fill="url(#blueGrad)" dot={{ fill: '#4A9EFF', r: 3 }} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Area Chart — Peminjaman ICT */}
+        <div className="rounded-2xl p-5"
+          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <div className="text-sm font-semibold text-white">Trend Peminjaman ICT</div>
+              <div className="text-xs mt-0.5" style={{ color: '#8892a4' }}>6 bulan lepas</div>
+            </div>
+            <span className="text-xl">💻</span>
+          </div>
+          <ResponsiveContainer width="100%" height={160}>
+            <AreaChart data={peminjamanTrend}>
+              <defs>
+                <linearGradient id="purpleGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#9B59B6" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#9B59B6" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+              <XAxis dataKey="label" tick={{ fill: '#8892a4', fontSize: 10 }} axisLine={false} tickLine={false} />
+              <YAxis hide />
+              <Tooltip content={<CustomTooltip />} />
+              <Area type="monotone" dataKey="count" stroke="#9B59B6" strokeWidth={2}
+                fill="url(#purpleGrad)" dot={{ fill: '#9B59B6', r: 3 }} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* ── CHARTS ROW 2: Bar Inventori + Donut DELIMA ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+        {/* Bar Chart — Inventori ICT */}
+        <div className="lg:col-span-2 rounded-2xl p-5"
+          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <div className="text-sm font-semibold text-white">Status Inventori ICT</div>
+              <div className="text-xs mt-0.5" style={{ color: '#8892a4' }}>Tersedia vs Dipinjam</div>
+            </div>
+            <div className="flex items-center gap-3 text-xs" style={{ color: '#8892a4' }}>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#4A9EFF] inline-block" />Tersedia</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#F5A623] inline-block" />Dipinjam</span>
+            </div>
+          </div>
+          {ictBarData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={160}>
+              <BarChart data={ictBarData} barGap={4}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+                <XAxis dataKey="label" tick={{ fill: '#8892a4', fontSize: 9 }} axisLine={false} tickLine={false} />
+                <YAxis hide />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar dataKey="tersedia" fill="#4A9EFF" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="dipinjam" fill="#F5A623" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-40 text-xs" style={{ color: '#4a5568' }}>
+              Tiada data inventori
+            </div>
+          )}
+        </div>
+
+        {/* Donut Chart — DELIMA */}
+        <div className="rounded-2xl p-5"
+          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          <div className="mb-4">
+            <div className="text-sm font-semibold text-white">Pengguna DELIMA</div>
+            <div className="text-xs mt-0.5" style={{ color: '#8892a4' }}>Taburan status</div>
+          </div>
+          {delimaDonut.length > 0 ? (
+            <>
+              <ResponsiveContainer width="100%" height={130}>
+                <PieChart>
+                  <Pie data={delimaDonut} cx="50%" cy="50%" innerRadius={38} outerRadius={58}
+                    dataKey="value" paddingAngle={3}>
+                    {delimaDonut.map((_, i) => (
+                      <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<CustomTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="space-y-1.5 mt-2">
+                {delimaDonut.map((d, i) => (
+                  <div key={i} className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1.5" style={{ color: '#8892a4' }}>
+                      <span className="w-2 h-2 rounded-full flex-shrink-0"
+                        style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }} />
+                      {d.name}
+                    </span>
+                    <span className="font-bold text-white">{d.value}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center justify-center h-40 text-xs" style={{ color: '#4a5568' }}>
+              Tiada data DELIMA
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── AKTIVITI TERKINI ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
         {/* Tempahan terkini */}
-        <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5">
-          <SectionHeader icon="🏫" title="Tempahan Terkini" color="text-sky-400"
-            onMore={() => navigate('/tempahan')} />
-          <div className="space-y-2.5 mt-4">
-            {tempahan.slice(0, 4).map(t => {
-              const s = TEMPAHAN_STATUS[t.status] ?? TEMPAHAN_STATUS.pending
+        <div className="rounded-2xl p-5"
+          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          <div className="flex items-center justify-between mb-4">
+            <div className="text-sm font-semibold text-white">🏫 Tempahan Terkini</div>
+            <button onClick={() => navigate('/tempahan')}
+              className="text-xs font-semibold hover:text-white transition-colors"
+              style={{ color: '#4A9EFF' }}>
+              Lihat semua →
+            </button>
+          </div>
+          <div className="space-y-2">
+            {tempahan.slice(0, 5).map(t => {
+              const colors = { approved: '#2ECC71', pending: '#F5A623', rejected: '#E74C3C' }
+              const labels = { approved: 'Lulus', pending: 'Tunggu', rejected: 'Tolak' }
+              const c = colors[t.status] ?? '#F5A623'
               return (
-                <div key={t.id} className="flex items-center gap-3 bg-gray-800/50 rounded-xl p-3">
-                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${s.dot}`} />
+                <div key={t.id} className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors"
+                  style={{ background: 'rgba(255,255,255,0.03)' }}>
+                  <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: c }} />
                   <div className="flex-1 min-w-0">
                     <div className="text-xs font-semibold text-white truncate">{t.guru}</div>
-                    <div className="text-xs text-gray-500 truncate">{t.bilik} • {t.masa}</div>
+                    <div className="text-xs truncate" style={{ color: '#8892a4' }}>{t.bilik} • {t.masa}</div>
                   </div>
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${s.badge}`}>{s.label}</span>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0"
+                    style={{ background: c + '22', color: c }}>
+                    {labels[t.status] ?? 'Tunggu'}
+                  </span>
                 </div>
               )
             })}
             {tempahan.length === 0 && (
-              <div className="text-center text-xs text-gray-500 py-6">Tiada rekod tempahan</div>
+              <div className="text-center py-6 text-xs" style={{ color: '#4a5568' }}>Tiada rekod tempahan</div>
             )}
           </div>
         </div>
 
         {/* ICT terkini */}
-        <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5">
-          <SectionHeader icon="💻" title="Peminjaman ICT Terkini" color="text-indigo-400"
-            onMore={() => navigate('/ict')} />
-          <div className="space-y-2.5 mt-4">
-            {peminjaman.slice(0, 4).map(t => {
-              const s = ICT_STATUS[t.status] ?? ICT_STATUS.dipinjam
+        <div className="rounded-2xl p-5"
+          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          <div className="flex items-center justify-between mb-4">
+            <div className="text-sm font-semibold text-white">💻 Peminjaman ICT Terkini</div>
+            <button onClick={() => navigate('/ict')}
+              className="text-xs font-semibold hover:text-white transition-colors"
+              style={{ color: '#9B59B6' }}>
+              Lihat semua →
+            </button>
+          </div>
+          <div className="space-y-2">
+            {peminjaman.slice(0, 5).map(p => {
+              const colors = { dipinjam: '#4A9EFF', lewat: '#E74C3C', dipulangkan: '#2ECC71', pending: '#F5A623' }
+              const labels = { dipinjam: 'Dipinjam', lewat: 'Lewat', dipulangkan: 'Pulang', pending: 'Tunggu' }
+              const c = colors[p.status] ?? '#4A9EFF'
               return (
-                <div key={t.id} className="flex items-center gap-3 bg-gray-800/50 rounded-xl p-3">
-                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${s.dot}`} />
+                <div key={p.id} className="flex items-center gap-3 rounded-xl px-3 py-2.5"
+                  style={{ background: 'rgba(255,255,255,0.03)' }}>
+                  <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: c }} />
                   <div className="flex-1 min-w-0">
-                    <div className="text-xs font-semibold text-white truncate">{t.peminjam}</div>
-                    <div className="text-xs text-gray-500 truncate">{t.barang} • Pulang: {t.tarikh_pulang}</div>
+                    <div className="text-xs font-semibold text-white truncate">{p.peminjam}</div>
+                    <div className="text-xs truncate" style={{ color: '#8892a4' }}>{p.barang} • Pulang: {p.tarikh_pulang}</div>
                   </div>
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${s.badge}`}>{s.label}</span>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0"
+                    style={{ background: c + '22', color: c }}>
+                    {labels[p.status] ?? 'Dipinjam'}
+                  </span>
                 </div>
               )
             })}
             {peminjaman.length === 0 && (
-              <div className="text-center text-xs text-gray-500 py-6">Tiada rekod peminjaman</div>
+              <div className="text-center py-6 text-xs" style={{ color: '#4a5568' }}>Tiada rekod peminjaman</div>
             )}
           </div>
         </div>
       </div>
 
-      {/* DELIMA summary */}
-      <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5">
-        <SectionHeader icon="🌺" title="Ringkasan DELIMA" color="text-rose-400"
-          onMore={() => navigate('/delima')} />
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
-          {[
-            { num: guru.length,                                    label: 'Jumlah Guru',    icon: '👨‍🏫', color: 'text-violet-400' },
-            { num: murid.length,                                   label: 'Jumlah Murid',   icon: '🎓',  color: 'text-pink-400' },
-            { num: guru.filter(g => g.status === 'aktif').length,  label: 'Guru Aktif',     icon: '✅',  color: 'text-emerald-400' },
-            { num: murid.filter(m => m.status === 'kunci').length, label: 'Akaun Dikunci',  icon: '🔒',  color: 'text-red-400' },
-          ].map((s, i) => (
-            <div key={i} className="bg-gray-800/50 rounded-2xl p-4 text-center">
-              <div className="text-2xl mb-1">{s.icon}</div>
-              <div className={`text-2xl font-black ${s.color}`}>{s.num}</div>
-              <div className="text-xs text-gray-500 mt-1">{s.label}</div>
+      {/* ── 3 SISTEM CARDS ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {[
+          {
+            label: 'Tempahan Bilik Khas', icon: '🏫', route: '/tempahan',
+            gradient: 'linear-gradient(135deg, #0ea5e9, #06b6d4)',
+            stats: [
+              { num: tempahan.length, label: 'Jumlah' },
+              { num: pendingTempahan, label: 'Pending' },
+              { num: todayTempahan,   label: 'Hari Ini' },
+            ],
+          },
+          {
+            label: 'Peminjaman Barang ICT', icon: '💻', route: '/ict',
+            gradient: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+            stats: [
+              { num: barang.length, label: 'Jenis' },
+              { num: dipinjamICT,   label: 'Dipinjam' },
+              { num: lewatICT,      label: 'Lewat' },
+            ],
+          },
+          {
+            label: 'Pengurusan ID DELIMA', icon: '🌺', route: '/delima',
+            gradient: 'linear-gradient(135deg, #f43f5e, #ec4899)',
+            stats: [
+              { num: guru.length,       label: 'Guru' },
+              { num: murid.length,      label: 'Murid' },
+              { num: guruAktif + muridAktif, label: 'Aktif' },
+            ],
+          },
+        ].map((s, i) => (
+          <div key={i} onClick={() => navigate(s.route)}
+            className="rounded-2xl overflow-hidden cursor-pointer transition-all hover:scale-[1.01]"
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-card)' }}>
+            <div className="p-5" style={{ background: s.gradient }}>
+              <div className="flex items-start justify-between">
+                <span className="text-3xl">{s.icon}</span>
+                <span className="text-xs font-bold bg-white/20 text-white px-2.5 py-1 rounded-full">Buka →</span>
+              </div>
+              <div className="mt-3 text-base font-bold text-white leading-tight">{s.label}</div>
             </div>
-          ))}
-        </div>
+            <div className="grid grid-cols-3 divide-x px-1 py-3"
+              style={{ borderTop: '1px solid var(--border)', borderColor: 'rgba(255,255,255,0.06)' }}>
+              {s.stats.map((st, j) => (
+                <div key={j} className="text-center px-2">
+                  <div className="text-xl font-black text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{st.num}</div>
+                  <div className="text-xs mt-0.5" style={{ color: '#8892a4' }}>{st.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
 
     </Layout>
