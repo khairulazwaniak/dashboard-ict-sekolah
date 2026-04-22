@@ -713,11 +713,124 @@ export default function TempahanBilik() {
 
       {/* ── MODAL ── */}
       {modal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center"
-          onClick={e => e.target === e.currentTarget && setModal(null)}>
-          <div className="bg-white border border-gray-200 rounded-t-3xl w-full max-w-lg p-6">
-            <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-5" />
-            <div className="text-base font-bold text-sky-400 mb-4">Detail Tempahan</div>
+        <ModalTempahan
+          modal={modal} isAdmin={isAdmin} bilikList={bilikList}
+          STATUS_CONFIG={STATUS_CONFIG} TODAY={TODAY}
+          PAGI_STARTS={PAGI_STARTS} PAGI_ENDS={PAGI_ENDS}
+          PETANG_STARTS={PETANG_STARTS} PETANG_ENDS={PETANG_ENDS}
+          toMins={toMins} durasiLabel={durasiLabel}
+          onClose={() => setModal(null)}
+          onApprove={id => updateStatus(id, 'approved')}
+          onReject={id => updateStatus(id, 'rejected')}
+          onDelete={id => deleteTempahan(id)}
+          onEdit={async (id, data) => {
+            const { error } = await supabase.from('tempahan_bilik').update(data).eq('id', id)
+            if (error) { showToast('Ralat: ' + error.message, 'error'); return }
+            showToast('✅ Tempahan berjaya dikemaskini!')
+            setModal(null)
+            fetchTempahan()
+          }}
+        />
+      )}
+
+    </Layout>
+  )
+}
+
+function ModalTempahan({ modal, isAdmin, bilikList, STATUS_CONFIG, TODAY, PAGI_STARTS, PAGI_ENDS, PETANG_STARTS, PETANG_ENDS, toMins, durasiLabel, onClose, onApprove, onReject, onDelete, onEdit }) {
+  const [editMode, setEditMode] = useState(false)
+  const [ed, setEd] = useState(null)
+
+  const availTamat = (() => {
+    if (!ed?.masa_mula) return []
+    const isPagi = PAGI_STARTS.includes(ed.masa_mula)
+    const ends = isPagi ? PAGI_ENDS : PETANG_ENDS
+    return ends.filter(e => toMins(e) > toMins(ed.masa_mula))
+  })()
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center"
+      onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="bg-white border border-gray-200 rounded-t-3xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+        <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-5" />
+
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-base font-bold text-sky-400">Detail Tempahan</div>
+          {isAdmin && !editMode && (
+            <button onClick={() => {
+              const [mula, tamat] = (modal.masa || '–').split('–')
+              setEd({ guru: modal.guru, bilik: modal.bilik, tarikh: modal.tarikh, masa_mula: mula?.trim() || '', masa_tamat: tamat?.trim() || '', tujuan: modal.tujuan || '' })
+              setEditMode(true)
+            }}
+              className="px-3 py-1.5 bg-sky-50 text-sky-600 border border-sky-200 rounded-xl text-xs font-bold hover:bg-sky-100">
+              ✏️ Edit
+            </button>
+          )}
+        </div>
+
+        {editMode && ed ? (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Nama Guru</label>
+              <input value={ed.guru} onChange={e => setEd(d => ({ ...d, guru: e.target.value }))}
+                className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-sky-400" />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Bilik</label>
+              <select value={ed.bilik} onChange={e => setEd(d => ({ ...d, bilik: e.target.value }))}
+                className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-sky-400">
+                {bilikList.map(b => <option key={b.id}>{b.nama}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Tarikh</label>
+              <input type="date" value={ed.tarikh} min={TODAY}
+                onChange={e => setEd(d => ({ ...d, tarikh: e.target.value }))}
+                className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-sky-400" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Masa Mula</label>
+                <select value={ed.masa_mula} onChange={e => setEd(d => ({ ...d, masa_mula: e.target.value, masa_tamat: '' }))}
+                  className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-sky-400">
+                  <option value="">-- Pilih --</option>
+                  <optgroup label="☀️ Pagi">{PAGI_STARTS.map(t => <option key={t}>{t}</option>)}</optgroup>
+                  <optgroup label="🌙 Petang">{PETANG_STARTS.map(t => <option key={t}>{t}</option>)}</optgroup>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Masa Tamat</label>
+                <select value={ed.masa_tamat} disabled={!ed.masa_mula}
+                  onChange={e => setEd(d => ({ ...d, masa_tamat: e.target.value }))}
+                  className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-sky-400 disabled:opacity-50">
+                  <option value="">-- Pilih --</option>
+                  {availTamat.map(t => <option key={t}>{t}</option>)}
+                </select>
+              </div>
+            </div>
+            {ed.masa_mula && ed.masa_tamat && (
+              <div className="text-xs text-sky-600 font-semibold">
+                ⏱️ {durasiLabel(ed.masa_mula, ed.masa_tamat)}
+              </div>
+            )}
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Tujuan</label>
+              <textarea value={ed.tujuan} rows={2} onChange={e => setEd(d => ({ ...d, tujuan: e.target.value }))}
+                className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-sky-400 resize-none" />
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => onEdit(modal.id, { ...ed, masa: `${ed.masa_mula}–${ed.masa_tamat}` })}
+                className="flex-1 py-2.5 bg-sky-600 text-white rounded-xl text-xs font-bold hover:bg-sky-700">
+                💾 Simpan
+              </button>
+              <button onClick={() => { setEditMode(false); setEd(null) }}
+                className="px-4 py-2.5 bg-gray-100 text-gray-600 rounded-xl text-xs font-bold">
+                Batal
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
             {[
               ['Guru', modal.guru],
               ['Bilik', modal.bilik],
@@ -733,31 +846,30 @@ export default function TempahanBilik() {
             ))}
             {modal.status === 'pending' && isAdmin && (
               <div className="flex gap-2 mt-4">
-                <button onClick={() => updateStatus(modal.id, 'approved')}
+                <button onClick={() => onApprove(modal.id)}
                   className="flex-1 py-2.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-bold hover:bg-emerald-500/30">
                   ✅ Luluskan
                 </button>
-                <button onClick={() => updateStatus(modal.id, 'rejected')}
+                <button onClick={() => onReject(modal.id)}
                   className="flex-1 py-2.5 bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl text-xs font-bold hover:bg-red-500/30">
                   ❌ Tolak
                 </button>
               </div>
             )}
             {isAdmin && (
-              <button onClick={() => deleteTempahan(modal.id)}
-                className="w-full mt-3 border border-red-800 text-red-500 py-2.5 rounded-xl text-sm font-bold hover:bg-red-900/30 transition-colors">
+              <button onClick={() => onDelete(modal.id)}
+                className="w-full mt-3 border border-red-200 text-red-500 py-2.5 rounded-xl text-sm font-bold hover:bg-red-50 transition-colors">
                 🗑️ Padam Rekod
               </button>
             )}
-            <button onClick={() => setModal(null)}
+            <button onClick={onClose}
               className="w-full mt-3 border border-gray-200 text-gray-500 py-2.5 rounded-xl text-sm font-bold">
               Tutup
             </button>
-          </div>
-        </div>
-      )}
-
-    </Layout>
+          </>
+        )}
+      </div>
+    </div>
   )
 }
 

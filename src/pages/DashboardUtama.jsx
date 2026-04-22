@@ -43,6 +43,8 @@ export default function DashboardUtama() {
   const [barang, setBarang] = useState([])
   const [guru, setGuru] = useState([])
   const [murid, setMurid] = useState([])
+  const [showLaporan, setShowLaporan] = useState(false)
+  const [bulanLaporan, setBulanLaporan] = useState(new Date().toISOString().slice(0, 7))
 
   useEffect(() => {
     async function fetchAll() {
@@ -444,6 +446,173 @@ export default function DashboardUtama() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* ── LAPORAN BULANAN ── */}
+      <div className="rounded-2xl overflow-hidden" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+        <div className="flex items-center justify-between p-5 cursor-pointer" onClick={() => setShowLaporan(v => !v)}>
+          <div className="flex items-center gap-3">
+            <span className="text-xl">📊</span>
+            <div>
+              <div className="text-sm font-semibold" style={{ color: '#111827' }}>Laporan Bulanan</div>
+              <div className="text-xs mt-0.5" style={{ color: '#6B7280' }}>Jana laporan ringkasan untuk fail / pengetua</div>
+            </div>
+          </div>
+          <span className="text-gray-400 text-sm">{showLaporan ? '▲' : '▼'}</span>
+        </div>
+
+        {showLaporan && (() => {
+          const [tahun, bulan] = bulanLaporan.split('-').map(Number)
+          const labelBulan = new Date(tahun, bulan - 1).toLocaleDateString('ms-MY', { month: 'long', year: 'numeric' })
+          const tBulan = tempahan.filter(t => t.tarikh?.startsWith(bulanLaporan))
+          const pBulan = peminjaman.filter(p => p.tarikh_pinjam?.startsWith(bulanLaporan))
+
+          return (
+            <div className="px-5 pb-5 border-t border-gray-100">
+              <div className="flex items-center justify-between mt-4 mb-5 no-print">
+                <div className="flex items-center gap-3">
+                  <label className="text-xs font-semibold text-gray-600">Bulan:</label>
+                  <input type="month" value={bulanLaporan}
+                    onChange={e => setBulanLaporan(e.target.value)}
+                    className="bg-white border border-gray-200 rounded-xl px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus:border-indigo-400" />
+                </div>
+                <button onClick={() => window.print()}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors">
+                  🖨️ Print Laporan
+                </button>
+              </div>
+
+              {/* Print header */}
+              <div className="laporan-header mb-6 text-center border-b border-gray-200 pb-4">
+                <div className="text-xs font-bold text-gray-500 uppercase tracking-wide">LAPORAN BULANAN ICT</div>
+                <div className="text-lg font-black text-gray-900 mt-1">Sekolah Kebangsaan Darau</div>
+                <div className="text-xs text-gray-500">Kota Kinabalu, Sabah</div>
+                <div className="text-sm font-semibold text-indigo-600 mt-2">{labelBulan}</div>
+                <div className="text-xs text-gray-400 mt-1">Disediakan oleh: En. Khairul Azwani bin Haji Ahinin, Guru ICT</div>
+              </div>
+
+              {/* Ringkasan */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+                {[
+                  { label: 'Tempahan Diluluskan', num: tBulan.filter(t => t.status === 'approved').length, color: 'text-emerald-600' },
+                  { label: 'Tempahan Pending', num: tBulan.filter(t => t.status === 'pending').length, color: 'text-amber-600' },
+                  { label: 'Peminjaman ICT', num: pBulan.length, color: 'text-blue-600' },
+                  { label: 'Dipulangkan', num: pBulan.filter(p => p.status === 'dipulangkan').length, color: 'text-emerald-600' },
+                ].map((s, i) => (
+                  <div key={i} className="border border-gray-200 rounded-xl p-3 text-center">
+                    <div className={`text-2xl font-black ${s.color}`}>{s.num}</div>
+                    <div className="text-xs text-gray-500 mt-1">{s.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Tempahan table */}
+              <div className="mb-6">
+                <div className="text-xs font-bold text-gray-700 mb-2 uppercase tracking-wide">🏫 Rekod Tempahan Bilik Khas</div>
+                {tBulan.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs border-collapse">
+                      <thead>
+                        <tr style={{ background: '#F3F4F6' }}>
+                          {['Guru', 'Bilik', 'Tarikh', 'Masa', 'Status'].map(h => (
+                            <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {tBulan.map(t => (
+                          <tr key={t.id} className="hover:bg-gray-50">
+                            <td className="px-3 py-2 border border-gray-100 text-gray-900 font-medium">{t.guru}</td>
+                            <td className="px-3 py-2 border border-gray-100 text-gray-600">{t.bilik}</td>
+                            <td className="px-3 py-2 border border-gray-100 text-gray-600">{t.tarikh}</td>
+                            <td className="px-3 py-2 border border-gray-100 text-gray-600 font-mono">{t.masa}</td>
+                            <td className="px-3 py-2 border border-gray-100">
+                              <span className={`px-2 py-0.5 rounded-full font-bold text-xs ${
+                                t.status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
+                                t.status === 'pending'  ? 'bg-amber-100 text-amber-700' :
+                                                          'bg-red-100 text-red-700'
+                              }`}>
+                                {t.status === 'approved' ? 'Lulus' : t.status === 'pending' ? 'Tunggu' : 'Tolak'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-xs text-gray-400 italic py-3">Tiada rekod tempahan untuk bulan ini.</div>
+                )}
+              </div>
+
+              {/* Peminjaman table */}
+              <div className="mb-4">
+                <div className="text-xs font-bold text-gray-700 mb-2 uppercase tracking-wide">💻 Rekod Peminjaman Barang ICT</div>
+                {pBulan.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs border-collapse">
+                      <thead>
+                        <tr style={{ background: '#F3F4F6' }}>
+                          {['Peminjam', 'Jawatan', 'Barang', 'Tarikh Pinjam', 'Tarikh Pulang', 'Status'].map(h => (
+                            <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pBulan.map(p => {
+                          const sc = { dipinjam: 'bg-blue-100 text-blue-700', dipulangkan: 'bg-emerald-100 text-emerald-700', lewat: 'bg-red-100 text-red-700' }
+                          const sl = { dipinjam: 'Dipinjam', dipulangkan: 'Dipulangkan', lewat: 'Lewat' }
+                          return (
+                            <tr key={p.id} className="hover:bg-gray-50">
+                              <td className="px-3 py-2 border border-gray-100 text-gray-900 font-medium">{p.peminjam}</td>
+                              <td className="px-3 py-2 border border-gray-100 text-gray-600">{p.jawatan || '—'}</td>
+                              <td className="px-3 py-2 border border-gray-100 text-gray-600">{p.barang}</td>
+                              <td className="px-3 py-2 border border-gray-100 text-gray-600">{p.tarikh_pinjam}</td>
+                              <td className="px-3 py-2 border border-gray-100 text-gray-600">{p.tarikh_pulang || '—'}</td>
+                              <td className="px-3 py-2 border border-gray-100">
+                                <span className={`px-2 py-0.5 rounded-full font-bold text-xs ${sc[p.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                                  {sl[p.status] ?? p.status}
+                                </span>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-xs text-gray-400 italic py-3">Tiada rekod peminjaman untuk bulan ini.</div>
+                )}
+              </div>
+
+              {/* Inventori summary */}
+              <div>
+                <div className="text-xs font-bold text-gray-700 mb-2 uppercase tracking-wide">📦 Status Inventori ICT</div>
+                <table className="w-full text-xs border-collapse">
+                  <thead>
+                    <tr style={{ background: '#F3F4F6' }}>
+                      {['Barang', 'Kod', 'Jumlah', 'Tersedia'].map(h => (
+                        <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {barang.map(b => (
+                      <tr key={b.id} className="hover:bg-gray-50">
+                        <td className="px-3 py-2 border border-gray-100 text-gray-900 font-medium">{b.nama}</td>
+                        <td className="px-3 py-2 border border-gray-100 text-gray-500 font-mono">{b.kod}</td>
+                        <td className="px-3 py-2 border border-gray-100 text-gray-600">{b.kuantiti}</td>
+                        <td className="px-3 py-2 border border-gray-100">
+                          <span className={`font-bold ${b.tersedia === 0 ? 'text-red-600' : 'text-emerald-600'}`}>{b.tersedia}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )
+        })()}
       </div>
 
     </Layout>

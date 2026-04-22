@@ -47,6 +47,8 @@ export default function SistemIDDelima() {
   const [importing, setImporting] = useState(false)
   const importGuruRef = useRef(null)
   const importMuridRef = useRef(null)
+  const [editMode, setEditMode] = useState(false)
+  const [editData, setEditData] = useState(null)
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type })
@@ -190,6 +192,15 @@ export default function SistemIDDelima() {
     setSubTab('murid')
   }
 
+  async function editRecord(jenis, id, data) {
+    const table = jenis === 'guru' ? 'guru_delima' : 'murid_delima'
+    const { error } = await supabase.from(table).update(data).eq('id', id)
+    if (error) { showToast('Ralat: ' + error.message, 'error'); return }
+    showToast('✅ Rekod berjaya dikemaskini!')
+    setModal(null)
+    fetchData()
+  }
+
   async function deleteRecord(jenis, id) {
     const table = jenis === 'guru' ? 'guru_delima' : 'murid_delima'
     await supabase.from(table).delete().eq('id', id)
@@ -235,6 +246,7 @@ export default function SistemIDDelima() {
 
   function openModal(jenis, data) {
     setPwForm({ baru: '', sahkan: '', show: false })
+    setEditMode(false); setEditData(null)
     setModal({ jenis, data })
   }
 
@@ -548,26 +560,73 @@ export default function SistemIDDelima() {
 
             {modal.jenis === 'guru' && (() => {
               const g = modal.data
+              const ed = editData ?? {}
               return (
                 <>
-                  <div className="flex items-center gap-3 mb-5">
-                    <div className="w-14 h-14 bg-violet-50 rounded-2xl flex items-center justify-center text-3xl">👨‍🏫</div>
-                    <div>
-                      <div className="text-base font-bold text-violet-400">{g.nama}</div>
-                      <div className="font-mono text-xs text-gray-500 mt-0.5">{g.id_delima}</div>
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-14 h-14 bg-violet-50 rounded-2xl flex items-center justify-center text-3xl">👨‍🏫</div>
+                      <div>
+                        <div className="text-base font-bold text-violet-400">{g.nama}</div>
+                        <div className="font-mono text-xs text-gray-500 mt-0.5">{g.id_delima}</div>
+                      </div>
                     </div>
+                    {isAdmin && !editMode && (
+                      <button onClick={() => { setEditMode(true); setEditData({ nama: g.nama, no_pekerja: g.no_pekerja, email: g.email, no_tel: g.no_tel || '', subjek: g.subjek || '', gred: g.gred }) }}
+                        className="px-3 py-1.5 bg-violet-50 text-violet-600 border border-violet-200 rounded-xl text-xs font-bold hover:bg-violet-100">
+                        ✏️ Edit
+                      </button>
+                    )}
                   </div>
-                  {[['No. Pekerja', g.no_pekerja], ['E-mel', g.email], ['No. Tel', g.no_tel || '—'],
-                    ['Subjek', g.subjek], ['Gred', g.gred], ['Login Terakhir', g.last_login]].map(([k, v]) => (
-                    <div key={k} className="flex justify-between py-2 border-b border-gray-200">
-                      <span className="text-xs text-gray-500">{k}</span>
-                      <span className="text-xs font-bold text-gray-900">{v}</span>
+
+                  {editMode ? (
+                    <div className="space-y-3 mb-4">
+                      {[
+                        { label: 'Nama Penuh', key: 'nama' },
+                        { label: 'No. Pekerja', key: 'no_pekerja' },
+                        { label: 'E-mel', key: 'email' },
+                        { label: 'No. Tel', key: 'no_tel' },
+                        { label: 'Subjek', key: 'subjek' },
+                      ].map(f => (
+                        <div key={f.key}>
+                          <label className="block text-xs text-gray-500 mb-1">{f.label}</label>
+                          <input value={ed[f.key] ?? ''} onChange={e => setEditData(d => ({ ...d, [f.key]: e.target.value }))}
+                            className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-violet-400" />
+                        </div>
+                      ))}
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Gred</label>
+                        <select value={ed.gred ?? 'DG41'} onChange={e => setEditData(d => ({ ...d, gred: e.target.value }))}
+                          className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-violet-400">
+                          {GRED_LIST.map(gr => <option key={gr}>{gr}</option>)}
+                        </select>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => editRecord('guru', g.id, editData)}
+                          className="flex-1 py-2.5 bg-violet-600 text-white rounded-xl text-xs font-bold hover:bg-violet-700">
+                          💾 Simpan
+                        </button>
+                        <button onClick={() => { setEditMode(false); setEditData(null) }}
+                          className="px-4 py-2.5 bg-gray-100 text-gray-600 rounded-xl text-xs font-bold">
+                          Batal
+                        </button>
+                      </div>
                     </div>
-                  ))}
-                  <div className="flex justify-between py-2 border-b border-gray-200">
-                    <span className="text-xs text-gray-500">Status</span>
-                    <StatusBadge status={g.status} map={STATUS_GURU} />
-                  </div>
+                  ) : (
+                    <>
+                      {[['No. Pekerja', g.no_pekerja], ['E-mel', g.email], ['No. Tel', g.no_tel || '—'],
+                        ['Subjek', g.subjek], ['Gred', g.gred], ['Login Terakhir', g.last_login]].map(([k, v]) => (
+                        <div key={k} className="flex justify-between py-2 border-b border-gray-200">
+                          <span className="text-xs text-gray-500">{k}</span>
+                          <span className="text-xs font-bold text-gray-900">{v}</span>
+                        </div>
+                      ))}
+                      <div className="flex justify-between py-2 border-b border-gray-200">
+                        <span className="text-xs text-gray-500">Status</span>
+                        <StatusBadge status={g.status} map={STATUS_GURU} />
+                      </div>
+                    </>
+                  )}
 
                   {/* Admin-only controls */}
                   {isAdmin && <div className="mt-4 bg-gray-100 rounded-2xl p-4">
@@ -657,28 +716,75 @@ export default function SistemIDDelima() {
 
             {modal.jenis === 'murid' && (() => {
               const m = modal.data
+              const ed = editData ?? {}
               return (
                 <>
-                  <div className="flex items-center gap-3 mb-5">
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl ${m.jantina === 'P' ? 'bg-pink-50' : 'bg-blue-50'}`}>
-                      {m.jantina === 'P' ? '👧' : '👦'}
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl ${m.jantina === 'P' ? 'bg-pink-50' : 'bg-blue-50'}`}>
+                        {m.jantina === 'P' ? '👧' : '👦'}
+                      </div>
+                      <div>
+                        <div className="text-base font-bold text-violet-400">{m.nama}</div>
+                        <div className="font-mono text-xs text-gray-500 mt-0.5">{m.id_delima}</div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-base font-bold text-violet-400">{m.nama}</div>
-                      <div className="font-mono text-xs text-gray-500 mt-0.5">{m.id_delima}</div>
-                    </div>
+                    {isAdmin && !editMode && (
+                      <button onClick={() => { setEditMode(true); setEditData({ nama: m.nama, no_kad: m.no_kad, email: m.email || '', kelas: m.kelas, jantina: m.jantina }) }}
+                        className="px-3 py-1.5 bg-violet-50 text-violet-600 border border-violet-200 rounded-xl text-xs font-bold hover:bg-violet-100">
+                        ✏️ Edit
+                      </button>
+                    )}
                   </div>
-                  {[['No. Kad', m.no_kad], ['E-mel', m.email], ['Kelas', m.kelas],
-                    ['Jantina', m.jantina === 'L' ? 'Lelaki' : 'Perempuan'], ['Login Terakhir', m.last_login]].map(([k, v]) => (
-                    <div key={k} className="flex justify-between py-2 border-b border-gray-200">
-                      <span className="text-xs text-gray-500">{k}</span>
-                      <span className="text-xs font-bold text-gray-900">{v}</span>
+
+                  {editMode ? (
+                    <div className="space-y-3 mb-4">
+                      {[
+                        { label: 'Nama Penuh', key: 'nama' },
+                        { label: 'No. Kad Pengenalan', key: 'no_kad' },
+                        { label: 'E-mel', key: 'email' },
+                        { label: 'Kelas', key: 'kelas' },
+                      ].map(f => (
+                        <div key={f.key}>
+                          <label className="block text-xs text-gray-500 mb-1">{f.label}</label>
+                          <input value={ed[f.key] ?? ''} onChange={e => setEditData(d => ({ ...d, [f.key]: e.target.value }))}
+                            className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-violet-400" />
+                        </div>
+                      ))}
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Jantina</label>
+                        <select value={ed.jantina ?? 'L'} onChange={e => setEditData(d => ({ ...d, jantina: e.target.value }))}
+                          className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-violet-400">
+                          <option value="L">Lelaki</option>
+                          <option value="P">Perempuan</option>
+                        </select>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => editRecord('murid', m.id, editData)}
+                          className="flex-1 py-2.5 bg-violet-600 text-white rounded-xl text-xs font-bold hover:bg-violet-700">
+                          💾 Simpan
+                        </button>
+                        <button onClick={() => { setEditMode(false); setEditData(null) }}
+                          className="px-4 py-2.5 bg-gray-100 text-gray-600 rounded-xl text-xs font-bold">
+                          Batal
+                        </button>
+                      </div>
                     </div>
-                  ))}
-                  <div className="flex justify-between py-2 border-b border-gray-200">
-                    <span className="text-xs text-gray-500">Status</span>
-                    <StatusBadge status={m.status} map={STATUS_MURID} />
-                  </div>
+                  ) : (
+                    <>
+                      {[['No. Kad', m.no_kad], ['E-mel', m.email], ['Kelas', m.kelas],
+                        ['Jantina', m.jantina === 'L' ? 'Lelaki' : 'Perempuan'], ['Login Terakhir', m.last_login]].map(([k, v]) => (
+                        <div key={k} className="flex justify-between py-2 border-b border-gray-200">
+                          <span className="text-xs text-gray-500">{k}</span>
+                          <span className="text-xs font-bold text-gray-900">{v}</span>
+                        </div>
+                      ))}
+                      <div className="flex justify-between py-2 border-b border-gray-200">
+                        <span className="text-xs text-gray-500">Status</span>
+                        <StatusBadge status={m.status} map={STATUS_MURID} />
+                      </div>
+                    </>
+                  )}
 
                   {isAdmin && <div className="mt-4">
                     <div className="text-xs font-bold text-gray-500 mb-2">Urus Status Akaun</div>

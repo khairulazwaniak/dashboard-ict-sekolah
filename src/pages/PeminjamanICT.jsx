@@ -18,6 +18,12 @@ const STATUS_CONFIG = {
   pending:     { bg: 'bg-amber-100',  text: 'text-amber-700',  label: 'Menunggu',    dot: 'bg-amber-400' },
 }
 
+const STATUS_SERVIS = {
+  dilaporkan:   { bg: 'bg-red-100',    text: 'text-red-700',    label: 'Dilaporkan',   dot: 'bg-red-400' },
+  dalam_servis: { bg: 'bg-amber-100',  text: 'text-amber-700',  label: 'Dalam Servis', dot: 'bg-amber-400' },
+  siap:         { bg: 'bg-emerald-100',text: 'text-emerald-700',label: 'Siap',         dot: 'bg-emerald-400' },
+}
+
 const TODAY = new Date().toISOString().slice(0, 10)
 
 function getKategoriIcon(nama) {
@@ -51,6 +57,11 @@ export default function PeminjamanICT() {
   const qrRef = useRef(null)
   const BASE_URL = window.location.origin
 
+  const [servis, setServis] = useState([])
+  const [formServis, setFormServis] = useState({ barang_nama: '', kod: '', masalah: '', dilaporkan_oleh: '', tarikh_lapor: TODAY, catatan: '' })
+  const [editMode, setEditMode] = useState(false)
+  const [editData, setEditData] = useState(null)
+
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type })
     setTimeout(() => setToast(null), 2500)
@@ -67,7 +78,12 @@ export default function PeminjamanICT() {
     setLoading(false)
   }
 
-  useEffect(() => { fetchData() }, [])
+  async function fetchServis() {
+    const { data } = await supabase.from('penyelenggaraan_ict').select('*').order('created_at', { ascending: false })
+    setServis(data ?? [])
+  }
+
+  useEffect(() => { fetchData(); fetchServis() }, [])
 
   const stats = {
     totalBarang: items.length,
@@ -178,15 +194,58 @@ export default function PeminjamanICT() {
     fetchData()
   }
 
+  async function editPeminjaman(id, data) {
+    const { error } = await supabase.from('peminjaman_ict').update(data).eq('id', id)
+    if (error) { showToast('Ralat: ' + error.message, 'error'); return }
+    showToast('✅ Rekod berjaya dikemaskini!')
+    setModal(null); setEditMode(false); setEditData(null)
+    fetchData()
+  }
+
+  async function editBarang(id, data) {
+    const { error } = await supabase.from('barang_ict').update(data).eq('id', id)
+    if (error) { showToast('Ralat: ' + error.message, 'error'); return }
+    showToast('✅ Barang berjaya dikemaskini!')
+    setModal(null); setEditMode(false); setEditData(null)
+    fetchData()
+  }
+
+  async function tambahServis() {
+    if (!formServis.barang_nama || !formServis.masalah || !formServis.dilaporkan_oleh) {
+      showToast('Sila lengkapkan maklumat wajib!', 'error'); return
+    }
+    const { error } = await supabase.from('penyelenggaraan_ict').insert([{ ...formServis, status: 'dilaporkan' }])
+    if (error) { showToast('Ralat: ' + error.message, 'error'); return }
+    setFormServis({ barang_nama: '', kod: '', masalah: '', dilaporkan_oleh: '', tarikh_lapor: TODAY, catatan: '' })
+    showToast('✅ Laporan rosak berjaya dihantar!')
+    fetchServis()
+  }
+
+  async function updateStatusServis(id, status, tarikh_siap = null) {
+    const update = tarikh_siap ? { status, tarikh_siap } : { status }
+    await supabase.from('penyelenggaraan_ict').update(update).eq('id', id)
+    showToast('✅ Status servis dikemaskini!')
+    fetchServis()
+  }
+
+  async function deleteServis(id) {
+    await supabase.from('penyelenggaraan_ict').delete().eq('id', id)
+    showToast('🗑️ Rekod servis dipadam!')
+    fetchServis()
+  }
+
   const filteredPeminjaman = filterStatus === 'semua'
     ? peminjaman
     : peminjaman.filter(p => p.status === filterStatus)
+
+  const servisAktif = servis.filter(s => s.status !== 'siap').length
 
   const TABS = [
     { id: 'dashboard', label: '🏠 Utama' },
     { id: 'pinjam',    label: '➕ Pinjam' },
     { id: 'senarai',   label: '📋 Senarai' },
     { id: 'inventori', label: '📦 Inventori' },
+    { id: 'servis',    label: '🔧 Servis', badge: servisAktif },
     { id: 'admin',     label: '⚙️ Admin' },
   ]
 
@@ -206,10 +265,15 @@ export default function PeminjamanICT() {
       <div className="flex gap-1.5 bg-white border border-gray-200 rounded-2xl p-1.5 overflow-x-auto scrollbar-hide">
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`flex-shrink-0 relative px-4 py-2 rounded-xl text-xs font-bold transition-all ${
               tab === t.id ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:text-gray-900'
             }`}>
             {t.label}
+            {t.badge > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                {t.badge}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -452,6 +516,129 @@ export default function PeminjamanICT() {
         </div>
       )}
 
+      {/* ── SERVIS ── */}
+      {tab === 'servis' && (
+        <>
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { num: servis.filter(s => s.status === 'dilaporkan').length,   label: 'Dilaporkan',   color: 'text-red-500' },
+              { num: servis.filter(s => s.status === 'dalam_servis').length, label: 'Dalam Servis', color: 'text-amber-500' },
+              { num: servis.filter(s => s.status === 'siap').length,         label: 'Siap',         color: 'text-emerald-500' },
+            ].map((s, i) => (
+              <div key={i} className="bg-white border border-gray-200 rounded-2xl p-4 text-center">
+                <div className={`text-2xl font-black ${s.color}`}>{s.num}</div>
+                <div className="text-xs text-gray-500 mt-1">{s.label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Form lapor rosak */}
+          <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-3">
+            <div className="text-sm font-bold text-red-500">🔧 Lapor Barang Rosak / Penyelenggaraan</div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-indigo-400 mb-1.5">Nama Barang *</label>
+                <select value={formServis.barang_nama}
+                  onChange={e => {
+                    const item = items.find(i => i.nama === e.target.value)
+                    setFormServis(f => ({ ...f, barang_nama: e.target.value, kod: item?.kod ?? '' }))
+                  }}
+                  className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-indigo-400">
+                  <option value="">-- Pilih Barang --</option>
+                  {items.map(i => <option key={i.id} value={i.nama}>{i.nama}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-indigo-400 mb-1.5">Dilaporkan Oleh *</label>
+                <input value={formServis.dilaporkan_oleh}
+                  onChange={e => setFormServis(f => ({ ...f, dilaporkan_oleh: e.target.value }))}
+                  placeholder="Nama guru / staf"
+                  className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-400" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-indigo-400 mb-1.5">Jenis Masalah *</label>
+              <textarea value={formServis.masalah}
+                onChange={e => setFormServis(f => ({ ...f, masalah: e.target.value }))}
+                placeholder="Huraikan kerosakan atau masalah..."
+                rows={2}
+                className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-400 resize-none" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-indigo-400 mb-1.5">Tarikh Lapor</label>
+                <input type="date" value={formServis.tarikh_lapor}
+                  onChange={e => setFormServis(f => ({ ...f, tarikh_lapor: e.target.value }))}
+                  className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-indigo-400" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 mb-1.5">Catatan Tambahan</label>
+                <input value={formServis.catatan}
+                  onChange={e => setFormServis(f => ({ ...f, catatan: e.target.value }))}
+                  placeholder="Tidak wajib"
+                  className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-400" />
+              </div>
+            </div>
+            <button onClick={tambahServis}
+              className="w-full bg-gradient-to-r from-red-500 to-orange-400 text-white py-3 rounded-2xl text-sm font-bold hover:opacity-90 transition-opacity">
+              📋 Hantar Laporan Rosak
+            </button>
+          </div>
+
+          {/* Senarai rekod servis */}
+          <div className="space-y-3">
+            {servis.map(s => {
+              const sc = STATUS_SERVIS[s.status] ?? STATUS_SERVIS.dilaporkan
+              return (
+                <div key={s.id} className="bg-white border border-gray-200 rounded-2xl p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center text-xl flex-shrink-0">🔧</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <div className="text-sm font-bold text-gray-900">{s.barang_nama}</div>
+                        {s.kod && <div className="text-xs text-gray-400">{s.kod}</div>}
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${sc.bg} ${sc.text}`}>{sc.label}</span>
+                      </div>
+                      <div className="text-xs text-red-600 mt-1 font-semibold">{s.masalah}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">Dilaporkan: {s.dilaporkan_oleh} • {s.tarikh_lapor}</div>
+                      {s.catatan && <div className="text-xs text-gray-400 mt-0.5 italic">{s.catatan}</div>}
+                      {s.tarikh_siap && <div className="text-xs text-emerald-600 mt-0.5">✅ Siap: {s.tarikh_siap}</div>}
+                    </div>
+                  </div>
+                  {isAdmin && (
+                    <div className="flex gap-2 mt-3 flex-wrap">
+                      {s.status === 'dilaporkan' && (
+                        <button onClick={() => updateStatusServis(s.id, 'dalam_servis')}
+                          className="px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl text-xs font-bold hover:bg-amber-100 transition-colors">
+                          🔄 Dalam Servis
+                        </button>
+                      )}
+                      {s.status === 'dalam_servis' && (
+                        <button onClick={() => updateStatusServis(s.id, 'siap', TODAY)}
+                          className="px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold hover:bg-emerald-100 transition-colors">
+                          ✅ Tandakan Siap
+                        </button>
+                      )}
+                      <button onClick={() => deleteServis(s.id)}
+                        className="px-3 py-1.5 bg-red-50 text-red-500 border border-red-200 rounded-xl text-xs font-bold hover:bg-red-100 transition-colors">
+                        🗑️ Padam
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+            {servis.length === 0 && (
+              <div className="text-center py-12 text-gray-500">
+                <div className="text-5xl mb-3">✅</div>
+                <div className="text-sm">Tiada rekod servis/rosak</div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
       {/* ── ADMIN ── */}
       {tab === 'admin' && (
         <AdminGate>
@@ -684,42 +871,88 @@ export default function PeminjamanICT() {
       {/* ── MODAL ── */}
       {modal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center"
-          onClick={e => e.target === e.currentTarget && setModal(null)}>
+          onClick={e => { if (e.target === e.currentTarget) { setModal(null); setEditMode(false); setEditData(null) } }}>
           <div className="bg-white border border-gray-200 rounded-t-3xl w-full max-w-lg max-h-[85vh] overflow-y-auto p-6">
             <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-5" />
 
             {modal.type === 'detail' && (() => {
               const p = modal.data
-              const live = peminjaman.find(x => x.id === p.id)
+              const live = peminjaman.find(x => x.id === p.id) ?? p
               const s = STATUS_CONFIG[live?.status] ?? STATUS_CONFIG.dipinjam
+              const ed = editData ?? {}
               return (
                 <>
-                  <div className="text-base font-bold text-indigo-400 mb-4">Detail Peminjaman</div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-base font-bold text-indigo-400">Detail Peminjaman</div>
+                    {isAdmin && !editMode && (
+                      <button onClick={() => { setEditMode(true); setEditData({ peminjam: live.peminjam, jawatan: live.jawatan, tarikh_pulang: live.tarikh_pulang, catatan: live.catatan }) }}
+                        className="px-3 py-1.5 bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-xl text-xs font-bold hover:bg-indigo-100">
+                        ✏️ Edit
+                      </button>
+                    )}
+                  </div>
                   <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${s.bg} ${s.text} mb-4`}>{s.label}</div>
-                  {[
-                    ['Peminjam', p.peminjam], ['Jawatan', p.jawatan], ['Barang', p.barang],
-                    ['Kod Aset', p.kod], ['Kuantiti', p.kuantiti + ' unit'],
-                    ['Tarikh Pinjam', p.tarikh_pinjam], ['Tarikh Pulang', p.tarikh_pulang],
-                  ].map(([k, v]) => (
-                    <div key={k} className="flex justify-between py-2 border-b border-gray-200">
-                      <span className="text-xs text-gray-500">{k}</span>
-                      <span className="text-xs font-bold text-gray-900">{v}</span>
+
+                  {editMode ? (
+                    <div className="space-y-3 mb-4">
+                      {[
+                        { label: 'Peminjam', key: 'peminjam' },
+                        { label: 'Jawatan', key: 'jawatan' },
+                        { label: 'Tarikh Pulang', key: 'tarikh_pulang', type: 'date' },
+                      ].map(f => (
+                        <div key={f.key}>
+                          <label className="block text-xs text-gray-500 mb-1">{f.label}</label>
+                          <input type={f.type || 'text'} value={ed[f.key] ?? ''}
+                            onChange={e => setEditData(d => ({ ...d, [f.key]: e.target.value }))}
+                            className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-indigo-400" />
+                        </div>
+                      ))}
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Catatan</label>
+                        <textarea value={ed.catatan ?? ''} rows={2}
+                          onChange={e => setEditData(d => ({ ...d, catatan: e.target.value }))}
+                          className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-indigo-400 resize-none" />
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => editPeminjaman(live.id, editData)}
+                          className="flex-1 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700">
+                          💾 Simpan
+                        </button>
+                        <button onClick={() => { setEditMode(false); setEditData(null) }}
+                          className="px-4 py-2.5 bg-gray-100 text-gray-600 rounded-xl text-xs font-bold hover:bg-gray-200">
+                          Batal
+                        </button>
+                      </div>
                     </div>
-                  ))}
-                  {p.catatan && <div className="mt-3 text-xs bg-gray-100 rounded-xl p-3 text-gray-600">{p.catatan}</div>}
-                  {(live?.status === 'dipinjam' || live?.status === 'lewat') && (
+                  ) : (
+                    <>
+                      {[
+                        ['Peminjam', live.peminjam], ['Jawatan', live.jawatan], ['Barang', live.barang],
+                        ['Kod Aset', live.kod], ['Kuantiti', live.kuantiti + ' unit'],
+                        ['Tarikh Pinjam', live.tarikh_pinjam], ['Tarikh Pulang', live.tarikh_pulang],
+                      ].map(([k, v]) => (
+                        <div key={k} className="flex justify-between py-2 border-b border-gray-200">
+                          <span className="text-xs text-gray-500">{k}</span>
+                          <span className="text-xs font-bold text-gray-900">{v}</span>
+                        </div>
+                      ))}
+                      {live.catatan && <div className="mt-3 text-xs bg-gray-100 rounded-xl p-3 text-gray-600">{live.catatan}</div>}
+                    </>
+                  )}
+
+                  {!editMode && (live?.status === 'dipinjam' || live?.status === 'lewat') && (
                     <button onClick={() => pulangBarang(live)}
                       className="w-full mt-4 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 py-3 rounded-2xl text-sm font-bold hover:bg-emerald-500/30">
                       ✅ Tandakan Dipulangkan
                     </button>
                   )}
-                  {isAdmin && (
-                    <button onClick={() => deletePeminjaman(live ?? p)}
-                      className="w-full mt-2 border border-red-800 text-red-500 py-3 rounded-2xl text-sm font-bold hover:bg-red-900/30 transition-colors">
+                  {!editMode && isAdmin && (
+                    <button onClick={() => deletePeminjaman(live)}
+                      className="w-full mt-2 border border-red-200 text-red-500 py-3 rounded-2xl text-sm font-bold hover:bg-red-50 transition-colors">
                       🗑️ Padam Rekod
                     </button>
                   )}
-                  <button onClick={() => setModal(null)} className="w-full mt-2 border border-gray-200 text-gray-500 py-3 rounded-2xl text-sm font-bold">Tutup</button>
+                  {!editMode && <button onClick={() => { setModal(null); setEditMode(false); setEditData(null) }} className="w-full mt-2 border border-gray-200 text-gray-500 py-3 rounded-2xl text-sm font-bold">Tutup</button>}
                 </>
               )
             })()}
@@ -727,51 +960,108 @@ export default function PeminjamanICT() {
             {modal.type === 'item' && (() => {
               const item = modal.data
               const rekodBarang = peminjaman.filter(p => p.barang === item.nama && p.status !== 'dipulangkan')
+              const ed = editData ?? {}
               return (
                 <>
-                  {/* Gambar */}
                   {item.gambar_url && (
-                    <div className="w-full h-44 rounded-2xl overflow-hidden mb-4"
-                      style={{ border: '1px solid #E5E7EB' }}>
+                    <div className="w-full h-44 rounded-2xl overflow-hidden mb-4" style={{ border: '1px solid #E5E7EB' }}>
                       <img src={item.gambar_url} className="w-full h-full object-cover" />
                     </div>
                   )}
 
-                  <div className="text-base font-bold text-indigo-600 mb-0.5">{item.nama}</div>
-                  <div className="text-xs text-gray-500 mb-4">{item.kod}</div>
-
-                  {[
-                    ['Kategori',      item.kategori],
-                    ['No. Siri',      item.no_siri || '—'],
-                    ['Lokasi',        item.lokasi || '—'],
-                    ['Tarikh Terima', item.tarikh_terima ? new Date(item.tarikh_terima).toLocaleDateString('ms-MY', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'],
-                    ['Jumlah',        item.kuantiti + ' unit'],
-                    ['Tersedia',      item.tersedia + ' unit'],
-                  ].map(([k, v]) => (
-                    <div key={k} className="flex justify-between py-2 border-b border-gray-100">
-                      <span className="text-xs text-gray-500">{k}</span>
-                      <span className="text-xs font-bold text-gray-900 text-right max-w-[55%]">{v}</span>
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <div className="text-base font-bold text-indigo-600">{item.nama}</div>
+                      <div className="text-xs text-gray-500">{item.kod}</div>
                     </div>
-                  ))}
+                    {isAdmin && !editMode && (
+                      <button onClick={() => { setEditMode(true); setEditData({ nama: item.nama, kod: item.kod, kategori: item.kategori, no_siri: item.no_siri || '', lokasi: item.lokasi || '', kuantiti: item.kuantiti, tarikh_terima: item.tarikh_terima || '' }) }}
+                        className="px-3 py-1.5 bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-xl text-xs font-bold hover:bg-indigo-100">
+                        ✏️ Edit
+                      </button>
+                    )}
+                  </div>
 
-                  {rekodBarang.length > 0 && (
-                    <div className="mt-4">
-                      <div className="text-xs font-bold text-gray-500 mb-2">Sedang Dipinjam Oleh:</div>
-                      {rekodBarang.map(r => (
-                        <div key={r.id} className="bg-indigo-50 rounded-xl px-3 py-2 text-xs mb-2"
-                          style={{ border: '1px solid #C7D2FE' }}>
-                          <span className="font-bold text-gray-900">{r.peminjam}</span>
-                          {r.jawatan && <span className="text-gray-500"> • {r.jawatan}</span>}
-                          <div className="text-gray-500 mt-0.5">{r.kuantiti} unit {r.tarikh_pulang ? `• Pulang: ${r.tarikh_pulang}` : ''}</div>
+                  {editMode ? (
+                    <div className="space-y-3 mb-4">
+                      <div className="grid grid-cols-2 gap-3">
+                        {[
+                          { label: 'Nama Barang', key: 'nama' },
+                          { label: 'Kod Aset', key: 'kod' },
+                          { label: 'No. Siri', key: 'no_siri' },
+                          { label: 'Lokasi', key: 'lokasi' },
+                        ].map(f => (
+                          <div key={f.key}>
+                            <label className="block text-xs text-gray-500 mb-1">{f.label}</label>
+                            <input value={ed[f.key] ?? ''} onChange={e => setEditData(d => ({ ...d, [f.key]: e.target.value }))}
+                              className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-indigo-400" />
+                          </div>
+                        ))}
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-1">Kategori</label>
+                          <select value={ed.kategori ?? 'Laptop'} onChange={e => setEditData(d => ({ ...d, kategori: e.target.value }))}
+                            className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-indigo-400">
+                            {KATEGORI_LIST.map(k => <option key={k}>{k}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-1">Kuantiti</label>
+                          <input type="number" min="1" value={ed.kuantiti ?? 1} onChange={e => setEditData(d => ({ ...d, kuantiti: parseInt(e.target.value) }))}
+                            className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-indigo-400" />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Tarikh Terima</label>
+                        <input type="date" value={ed.tarikh_terima ?? ''} onChange={e => setEditData(d => ({ ...d, tarikh_terima: e.target.value }))}
+                          className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-indigo-400" />
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => editBarang(item.id, editData)}
+                          className="flex-1 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700">
+                          💾 Simpan
+                        </button>
+                        <button onClick={() => { setEditMode(false); setEditData(null) }}
+                          className="px-4 py-2.5 bg-gray-100 text-gray-600 rounded-xl text-xs font-bold hover:bg-gray-200">
+                          Batal
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {[
+                        ['Kategori',      item.kategori],
+                        ['No. Siri',      item.no_siri || '—'],
+                        ['Lokasi',        item.lokasi || '—'],
+                        ['Tarikh Terima', item.tarikh_terima ? new Date(item.tarikh_terima).toLocaleDateString('ms-MY', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'],
+                        ['Jumlah',        item.kuantiti + ' unit'],
+                        ['Tersedia',      item.tersedia + ' unit'],
+                      ].map(([k, v]) => (
+                        <div key={k} className="flex justify-between py-2 border-b border-gray-100">
+                          <span className="text-xs text-gray-500">{k}</span>
+                          <span className="text-xs font-bold text-gray-900 text-right max-w-[55%]">{v}</span>
                         </div>
                       ))}
-                    </div>
+                      {rekodBarang.length > 0 && (
+                        <div className="mt-4">
+                          <div className="text-xs font-bold text-gray-500 mb-2">Sedang Dipinjam Oleh:</div>
+                          {rekodBarang.map(r => (
+                            <div key={r.id} className="bg-indigo-50 rounded-xl px-3 py-2 text-xs mb-2" style={{ border: '1px solid #C7D2FE' }}>
+                              <span className="font-bold text-gray-900">{r.peminjam}</span>
+                              {r.jawatan && <span className="text-gray-500"> • {r.jawatan}</span>}
+                              <div className="text-gray-500 mt-0.5">{r.kuantiti} unit {r.tarikh_pulang ? `• Pulang: ${r.tarikh_pulang}` : ''}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
                   )}
 
-                  <button onClick={() => setModal(null)}
+                  {!editMode && <button onClick={() => { setModal(null); setEditMode(false); setEditData(null) }}
                     className="w-full mt-4 border border-gray-200 text-gray-500 py-3 rounded-2xl text-sm font-bold">
                     Tutup
-                  </button>
+                  </button>}
                 </>
               )
             })()}
