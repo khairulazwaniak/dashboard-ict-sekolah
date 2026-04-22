@@ -39,10 +39,42 @@ const SLOT_PETANG = [
   { masa: '16:30–17:00', label: 'T9' },
   { masa: '17:00–17:20', label: 'T10' },
 ]
-const MASA_LIST = [
-  ...SLOT_PAGI.filter(s => !s.rehat).map(s => s.masa),
-  ...SLOT_PETANG.map(s => s.masa),
-]
+
+const PAGI_STARTS = SLOT_PAGI.filter(s => !s.rehat).map(s => s.masa.split('–')[0])
+const PAGI_ENDS   = SLOT_PAGI.filter(s => !s.rehat).map(s => s.masa.split('–')[1])
+const PETANG_STARTS = SLOT_PETANG.map(s => s.masa.split('–')[0])
+const PETANG_ENDS   = SLOT_PETANG.map(s => s.masa.split('–')[1])
+const ALL_STARTS = [...PAGI_STARTS, ...PETANG_STARTS]
+
+function toMins(t) {
+  const [h, m] = t.split(':').map(Number)
+  return h * 60 + m
+}
+
+function hasOverlap(masa1, masa2) {
+  try {
+    const [s1, e1] = masa1.split('–').map(toMins)
+    const [s2, e2] = masa2.split('–').map(toMins)
+    return s1 < e2 && e1 > s2
+  } catch { return false }
+}
+
+function slotDalamRange(bookingMasa, slotMasa) {
+  try {
+    const [bs, be] = bookingMasa.split('–').map(toMins)
+    const [ss, se] = slotMasa.split('–').map(toMins)
+    return bs <= ss && be >= se
+  } catch { return bookingMasa === slotMasa }
+}
+
+function durasiLabel(mula, tamat) {
+  if (!mula || !tamat) return ''
+  const mins = toMins(tamat) - toMins(mula)
+  if (mins <= 0) return ''
+  const j = Math.floor(mins / 60)
+  const m = mins % 60
+  return `${j > 0 ? j + ' jam ' : ''}${m > 0 ? m + ' minit' : ''}`.trim()
+}
 
 const TODAY = new Date().toISOString().slice(0, 10)
 
@@ -58,7 +90,7 @@ export default function TempahanBilik() {
   const [jadualDate, setJadualDate] = useState(TODAY)
 
   const [form, setForm] = useState({
-    guru: '', bilik: '', tarikh: TODAY, masa: '', tujuan: '',
+    guru: '', bilik: '', tarikh: TODAY, masa_mula: '', masa_tamat: '', tujuan: '',
   })
 
   const [formBilik, setFormBilik] = useState({ nama: '', icon: '🏫', kapasiti: '30 pelajar' })
@@ -115,29 +147,44 @@ export default function TempahanBilik() {
     return 'available'
   }
 
-  // Semak status slot semasa isi borang
-  const slotKonflik = form.bilik && form.tarikh && form.masa
+  // Semak konflik masa range
+  const masaRange = form.masa_mula && form.masa_tamat
+    ? `${form.masa_mula}–${form.masa_tamat}` : null
+
+  const slotKonflik = masaRange && form.bilik && form.tarikh
     ? tempahan.find(t =>
         t.bilik === form.bilik &&
         t.tarikh === form.tarikh &&
-        t.masa === form.masa &&
-        t.status !== 'rejected'
+        t.status !== 'rejected' &&
+        hasOverlap(t.masa, masaRange)
       )
     : null
 
+  // End times — same session as mula, after mula
+  const availableTamat = (() => {
+    if (!form.masa_mula) return []
+    const isPagi = PAGI_STARTS.includes(form.masa_mula)
+    const ends = isPagi ? PAGI_ENDS : PETANG_ENDS
+    return ends.filter(e => toMins(e) > toMins(form.masa_mula))
+  })()
+
   async function submitTempahan() {
-    if (!form.guru || !form.bilik || !form.tarikh || !form.masa) {
+    if (!form.guru || !form.bilik || !form.tarikh || !form.masa_mula || !form.masa_tamat) {
       showToast('Sila lengkapkan semua maklumat!', 'error'); return
     }
-    if (slotKonflik) {
-      showToast(`⚠️ Slot ini sudah ditempah oleh ${slotKonflik.guru}!`, 'error'); return
+    if (toMins(form.masa_tamat) <= toMins(form.masa_mula)) {
+      showToast('Masa tamat mestilah selepas masa mula!', 'error'); return
     }
+    if (slotKonflik) {
+      showToast(`⚠️ Masa ini sudah ditempah oleh ${slotKonflik.guru}!`, 'error'); return
+    }
+    const masa = `${form.masa_mula}–${form.masa_tamat}`
     const { error } = await supabase.from('tempahan_bilik').insert([{
       guru: form.guru, bilik: form.bilik, tarikh: form.tarikh,
-      masa: form.masa, tujuan: form.tujuan, status: 'pending',
+      masa, tujuan: form.tujuan, status: 'pending',
     }])
     if (error) { showToast('Ralat: ' + error.message, 'error'); return }
-    setForm({ guru: '', bilik: '', tarikh: TODAY, masa: '', tujuan: '' })
+    setForm({ guru: '', bilik: '', tarikh: TODAY, masa_mula: '', masa_tamat: '', tujuan: '' })
     showToast('✅ Tempahan berjaya dihantar!')
     fetchTempahan()
     setTab('senarai')
@@ -419,33 +466,54 @@ export default function TempahanBilik() {
             </select>
           </div>
 
+          <div>
+            <label className="block text-xs font-semibold text-sky-400 mb-1.5">Tarikh *</label>
+            <input type="date" value={form.tarikh} min={TODAY}
+              onChange={e => setForm(p => ({ ...p, tarikh: e.target.value }))}
+              className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-indigo-400" />
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-sky-400 mb-1.5">Tarikh *</label>
-              <input type="date" value={form.tarikh} min={TODAY}
-                onChange={e => setForm(p => ({ ...p, tarikh: e.target.value }))}
-                className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-indigo-400" />
+              <label className="block text-xs font-semibold text-sky-400 mb-1.5">Masa Mula *</label>
+              <select value={form.masa_mula}
+                onChange={e => setForm(p => ({ ...p, masa_mula: e.target.value, masa_tamat: '' }))}
+                className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-indigo-400">
+                <option value="">-- Pilih --</option>
+                <optgroup label="☀️ Sesi Pagi">
+                  {PAGI_STARTS.map(t => <option key={t} value={t}>{t}</option>)}
+                </optgroup>
+                <optgroup label="🌙 Sesi Petang">
+                  {PETANG_STARTS.map(t => <option key={t} value={t}>{t}</option>)}
+                </optgroup>
+              </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-sky-400 mb-1.5">Masa *</label>
-              <select value={form.masa} onChange={e => setForm(p => ({ ...p, masa: e.target.value }))}
-                className={`w-full bg-white border rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none ${
-                  slotKonflik ? 'border-red-600 focus:border-red-500' : 'border-gray-200 focus:border-indigo-400'
-                }`}>
-                <option value="">-- Pilih Masa --</option>
-                {MASA_LIST.map(m => <option key={m}>{m}</option>)}
+              <label className="block text-xs font-semibold text-sky-400 mb-1.5">Masa Tamat *</label>
+              <select value={form.masa_tamat}
+                onChange={e => setForm(p => ({ ...p, masa_tamat: e.target.value }))}
+                disabled={!form.masa_mula}
+                className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-indigo-400 disabled:opacity-50">
+                <option value="">-- Pilih --</option>
+                {availableTamat.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
-              {slotKonflik && (
-                <div className="mt-1.5 flex items-center gap-1.5 text-xs font-semibold text-red-400">
-                  🔴 Slot ini sudah ditempah oleh <span className="font-bold">{slotKonflik.guru}</span>
-                  {slotKonflik.status === 'pending' && ' (menunggu lulus)'}
-                </div>
-              )}
-              {!slotKonflik && form.bilik && form.tarikh && form.masa && (
-                <div className="mt-1.5 text-xs font-semibold text-emerald-400">🟢 Slot ini kosong</div>
-              )}
             </div>
           </div>
+
+          {/* Durasi + konflik indicator */}
+          {form.masa_mula && form.masa_tamat && (
+            <div className={`rounded-xl px-3 py-2 text-xs font-semibold flex items-center gap-2 ${
+              slotKonflik
+                ? 'bg-red-50 border border-red-200 text-red-600'
+                : 'bg-emerald-50 border border-emerald-200 text-emerald-700'
+            }`}>
+              {slotKonflik ? (
+                <>🔴 Masa bertindih dengan tempahan <span className="font-bold">{slotKonflik.guru}</span>{slotKonflik.status === 'pending' ? ' (menunggu lulus)' : ''}</>
+              ) : (
+                <>🟢 Slot kosong • Tempoh: <span className="font-bold">{durasiLabel(form.masa_mula, form.masa_tamat)}</span></>
+              )}
+            </div>
+          )}
 
           <div>
             <label className="block text-xs font-semibold text-sky-400 mb-1.5">Tujuan / Catatan</label>
@@ -698,7 +766,7 @@ function JadualRow({ slot, bilikList, tempahan, tarikh, onBook }) {
       </td>
       {bilikList.map(bilik => {
         const booking = tempahan.find(t =>
-          t.bilik === bilik.nama && t.tarikh === tarikh && t.masa === slot.masa
+          t.bilik === bilik.nama && t.tarikh === tarikh && slotDalamRange(t.masa, slot.masa)
         )
         if (!booking) {
           return (
