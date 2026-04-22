@@ -105,8 +105,10 @@ export default function TempahanBilik() {
       .from('tempahan_bilik')
       .select('*')
       .order('created_at', { ascending: false })
-    setTempahan(data ?? [])
+    const rows = data ?? []
+    setTempahan(rows)
     setLoading(false)
+    return rows
   }
 
   async function fetchBilik() {
@@ -184,10 +186,12 @@ export default function TempahanBilik() {
       masa, tujuan: form.tujuan, status: 'pending',
     }])
     if (error) { showToast('Ralat: ' + error.message, 'error'); return }
+    const tarikhDitempah = form.tarikh
     setForm({ guru: '', bilik: '', tarikh: TODAY, masa_mula: '', masa_tamat: '', tujuan: '' })
     showToast('✅ Tempahan berjaya dihantar!')
-    fetchTempahan()
-    setTab('senarai')
+    await fetchTempahan()
+    setJadualDate(tarikhDitempah)
+    setTab('jadual')
   }
 
   async function bulkApprove() {
@@ -524,7 +528,7 @@ export default function TempahanBilik() {
           </div>
 
           <div className="bg-sky-50 border border-sky-200 rounded-xl p-3 text-xs text-sky-700">
-            ℹ️ Tempahan akan diproses oleh pentadbir dalam masa 24 jam.
+            ℹ️ Permohonan akan disemak oleh pentadbir. Hubungi Guru ICT terus sekiranya terdapat keperluan mendesak.
           </div>
 
           <button onClick={submitTempahan}
