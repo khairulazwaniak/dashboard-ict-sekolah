@@ -26,6 +26,8 @@ function getKategoriIcon(nama) {
   return found ? found[1] : '📦'
 }
 
+const KATEGORI_LIST = ['Laptop','Projektor','Tablet','Kamera','Audio','Lain']
+
 export default function PeminjamanICT() {
   const { isAdmin } = useAdmin()
   const [tab, setTab] = useState('dashboard')
@@ -40,6 +42,8 @@ export default function PeminjamanICT() {
     peminjam: '', jawatan: '', barang: '', kod: '',
     kuantiti: 1, tarikh_pinjam: TODAY, tarikh_pulang: '', catatan: '',
   })
+
+  const [formBarang, setFormBarang] = useState({ nama: '', kod: '', kategori: 'Laptop', kuantiti: 1 })
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type })
@@ -99,6 +103,18 @@ export default function PeminjamanICT() {
     showToast('✅ Rekod peminjaman berjaya disimpan!')
     fetchData()
     setTab('senarai')
+  }
+
+  async function tambahBarang() {
+    if (!formBarang.nama || !formBarang.kod) { showToast('Sila isi nama dan kod barang!', 'error'); return }
+    const qty = parseInt(formBarang.kuantiti) || 1
+    const { error } = await supabase.from('barang_ict').insert([{
+      ...formBarang, kuantiti: qty, tersedia: qty,
+    }])
+    if (error) { showToast('Ralat: ' + error.message, 'error'); return }
+    setFormBarang({ nama: '', kod: '', kategori: 'Laptop', kuantiti: 1 })
+    showToast('✅ Barang berjaya ditambah!')
+    fetchData()
   }
 
   async function deletePeminjaman(rec) {
@@ -424,9 +440,49 @@ export default function PeminjamanICT() {
             </div>
           </div>
 
-          <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5">
+          <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5 space-y-4">
             <SectionHeader icon="📦" title="Urus Inventori" color="text-indigo-400" />
-            <div className="space-y-2.5 mt-4">
+
+            {/* Form tambah barang */}
+            <div className="bg-gray-800 rounded-2xl p-4 space-y-3">
+              <div className="text-xs font-bold text-indigo-400">➕ Tambah Barang Baru</div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Nama Barang *</label>
+                  <input value={formBarang.nama} onChange={e => setFormBarang(f => ({ ...f, nama: e.target.value }))}
+                    placeholder="Contoh: Laptop Acer"
+                    className="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Kod Aset *</label>
+                  <input value={formBarang.kod} onChange={e => setFormBarang(f => ({ ...f, kod: e.target.value }))}
+                    placeholder="Contoh: SK/ICT/001"
+                    className="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Kategori</label>
+                  <select value={formBarang.kategori} onChange={e => setFormBarang(f => ({ ...f, kategori: e.target.value }))}
+                    className="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+                    {KATEGORI_LIST.map(k => <option key={k}>{k}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Kuantiti</label>
+                  <input type="number" min="1" value={formBarang.kuantiti}
+                    onChange={e => setFormBarang(f => ({ ...f, kuantiti: e.target.value }))}
+                    className="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" />
+                </div>
+              </div>
+              <button onClick={tambahBarang}
+                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-xs font-bold transition-colors">
+                ➕ Tambah Barang
+              </button>
+            </div>
+
+            {/* Senarai barang */}
+            <div className="space-y-2.5">
               {items.map(item => (
                 <div key={item.id} className="flex items-center gap-3 bg-gray-800/50 rounded-xl p-3">
                   <div className="text-xl">{getKategoriIcon(item.nama)}</div>

@@ -5,16 +5,7 @@ import SectionHeader from '../components/SectionHeader'
 import AdminGate from '../components/AdminGate'
 import { useAdmin } from '../contexts/AdminContext'
 
-const BILIK_LIST = [
-  { nama: 'Makmal Sains 1',    icon: '🔬', kapasiti: '32 pelajar' },
-  { nama: 'Makmal Sains 2',    icon: '🧪', kapasiti: '32 pelajar' },
-  { nama: 'Makmal Komputer 1', icon: '💻', kapasiti: '40 pelajar' },
-  { nama: 'Makmal Komputer 2', icon: '🖥️', kapasiti: '40 pelajar' },
-  { nama: 'Bilik STEM',        icon: '⚙️', kapasiti: '30 pelajar' },
-  { nama: 'Bilik Sumber',      icon: '📚', kapasiti: '25 pelajar' },
-  { nama: 'Dewan Kuliah',      icon: '🏛️', kapasiti: '80 pelajar' },
-  { nama: 'Bilik Tayangan',    icon: '📽️', kapasiti: '50 pelajar' },
-]
+const ICON_LIST = ['🏫','🔬','🧪','💻','🖥️','⚙️','📚','🏛️','📽️','🎨','🎭','🏋️','🔭','🧬','📐']
 
 const STATUS_CONFIG = {
   approved: { dot: 'bg-emerald-400', badge: 'bg-emerald-100 text-emerald-700', label: 'Lulus',  btn: 'bg-emerald-900/40 border-emerald-700 text-emerald-400' },
@@ -59,6 +50,7 @@ export default function TempahanBilik() {
   const { isAdmin } = useAdmin()
   const [tab, setTab] = useState('dashboard')
   const [tempahan, setTempahan] = useState([])
+  const [bilikList, setBilikList] = useState([])
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState(null)
   const [toast, setToast] = useState(null)
@@ -68,6 +60,8 @@ export default function TempahanBilik() {
   const [form, setForm] = useState({
     guru: '', bilik: '', tarikh: TODAY, masa: '', tujuan: '',
   })
+
+  const [formBilik, setFormBilik] = useState({ nama: '', icon: '🏫', kapasiti: '30 pelajar' })
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type })
@@ -83,7 +77,27 @@ export default function TempahanBilik() {
     setLoading(false)
   }
 
-  useEffect(() => { fetchTempahan() }, [])
+  async function fetchBilik() {
+    const { data } = await supabase.from('bilik_khas').select('*').order('created_at')
+    setBilikList(data ?? [])
+  }
+
+  async function tambahBilik() {
+    if (!formBilik.nama) { showToast('Sila masukkan nama bilik!', 'error'); return }
+    const { error } = await supabase.from('bilik_khas').insert([formBilik])
+    if (error) { showToast('Ralat: ' + error.message, 'error'); return }
+    setFormBilik({ nama: '', icon: '🏫', kapasiti: '30 pelajar' })
+    showToast('✅ Bilik berjaya ditambah!')
+    fetchBilik()
+  }
+
+  async function deleteBilik(id) {
+    await supabase.from('bilik_khas').delete().eq('id', id)
+    showToast('🗑️ Bilik dipadam!')
+    fetchBilik()
+  }
+
+  useEffect(() => { fetchTempahan(); fetchBilik() }, [])
 
   const pendingCount = tempahan.filter(t => t.status === 'pending').length
   const todayCount   = tempahan.filter(t => t.tarikh === TODAY).length
@@ -177,7 +191,7 @@ export default function TempahanBilik() {
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4">
             {[
-              { num: BILIK_LIST.length, label: 'Jumlah Bilik',   color: 'text-sky-400' },
+              { num: bilikList.length, label: 'Jumlah Bilik',   color: 'text-sky-400' },
               { num: pendingCount,      label: 'Menunggu Lulus', color: 'text-amber-400' },
               { num: todayCount,        label: 'Tempahan Hari Ini', color: 'text-emerald-400' },
             ].map((s, i) => (
@@ -519,6 +533,58 @@ export default function TempahanBilik() {
               {tempahan.length === 0 && (
                 <div className="text-center py-8 text-gray-500 text-xs">Tiada rekod</div>
               )}
+            </div>
+          </div>
+
+          {/* Urus Bilik */}
+          <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5 space-y-4">
+            <SectionHeader icon="🏫" title="Urus Bilik Khas" color="text-sky-400" />
+
+            {/* Form tambah bilik */}
+            <div className="bg-gray-800 rounded-2xl p-4 space-y-3">
+              <div className="text-xs font-bold text-sky-400">➕ Tambah Bilik Baru</div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Nama Bilik *</label>
+                <input value={formBilik.nama} onChange={e => setFormBilik(f => ({ ...f, nama: e.target.value }))}
+                  placeholder="Contoh: Makmal ICT 3"
+                  className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-sky-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Ikon</label>
+                  <select value={formBilik.icon} onChange={e => setFormBilik(f => ({ ...f, icon: e.target.value }))}
+                    className="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500">
+                    {ICON_LIST.map(ic => <option key={ic} value={ic}>{ic}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Kapasiti</label>
+                  <input value={formBilik.kapasiti} onChange={e => setFormBilik(f => ({ ...f, kapasiti: e.target.value }))}
+                    placeholder="30 pelajar"
+                    className="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-sky-500" />
+                </div>
+              </div>
+              <button onClick={tambahBilik}
+                className="w-full bg-sky-600 hover:bg-sky-500 text-white py-2.5 rounded-xl text-xs font-bold transition-colors">
+                ➕ Tambah Bilik
+              </button>
+            </div>
+
+            {/* Senarai bilik */}
+            <div className="space-y-2">
+              {bilikList.map(b => (
+                <div key={b.id} className="flex items-center gap-3 bg-gray-800/50 rounded-xl p-3">
+                  <span className="text-xl">{b.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-bold text-white">{b.nama}</div>
+                    <div className="text-xs text-gray-500">{b.kapasiti}</div>
+                  </div>
+                  <button onClick={() => deleteBilik(b.id)}
+                    className="text-xs text-red-500 hover:text-red-400 px-2 py-1 rounded-lg hover:bg-red-900/30 transition-colors">
+                    🗑️
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
         </AdminGate>
