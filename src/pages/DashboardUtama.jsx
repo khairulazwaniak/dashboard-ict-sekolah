@@ -183,141 +183,6 @@ export default function DashboardUtama() {
         ))}
       </div>
 
-      {/* ── CHARTS ROW 1: Trend Tempahan + Trend Peminjaman ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-
-        {/* Area Chart — Tempahan */}
-        <div className="rounded-2xl p-5"
-          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="text-sm font-semibold text-white">Trend Tempahan Bilik</div>
-              <div className="text-xs mt-0.5" style={{ color: '#8892a4' }}>6 bulan lepas</div>
-            </div>
-            <span className="text-xl">🏫</span>
-          </div>
-          <ResponsiveContainer width="100%" height={160}>
-            <AreaChart data={tempahanTrend}>
-              <defs>
-                <linearGradient id="blueGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#4A9EFF" stopOpacity={0.25} />
-                  <stop offset="95%" stopColor="#4A9EFF" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
-              <XAxis dataKey="label" tick={{ fill: '#8892a4', fontSize: 10 }} axisLine={false} tickLine={false} />
-              <YAxis hide />
-              <Tooltip content={<CustomTooltip />} />
-              <Area type="monotone" dataKey="count" stroke="#4A9EFF" strokeWidth={2}
-                fill="url(#blueGrad)" dot={{ fill: '#4A9EFF', r: 3 }} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Area Chart — Peminjaman ICT */}
-        <div className="rounded-2xl p-5"
-          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="text-sm font-semibold text-white">Trend Peminjaman ICT</div>
-              <div className="text-xs mt-0.5" style={{ color: '#8892a4' }}>6 bulan lepas</div>
-            </div>
-            <span className="text-xl">💻</span>
-          </div>
-          <ResponsiveContainer width="100%" height={160}>
-            <AreaChart data={peminjamanTrend}>
-              <defs>
-                <linearGradient id="purpleGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#9B59B6" stopOpacity={0.25} />
-                  <stop offset="95%" stopColor="#9B59B6" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
-              <XAxis dataKey="label" tick={{ fill: '#8892a4', fontSize: 10 }} axisLine={false} tickLine={false} />
-              <YAxis hide />
-              <Tooltip content={<CustomTooltip />} />
-              <Area type="monotone" dataKey="count" stroke="#9B59B6" strokeWidth={2}
-                fill="url(#purpleGrad)" dot={{ fill: '#9B59B6', r: 3 }} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* ── CHARTS ROW 2: Bar Inventori + Donut DELIMA ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-
-        {/* Bar Chart — Inventori ICT */}
-        <div className="lg:col-span-2 rounded-2xl p-5"
-          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="text-sm font-semibold text-white">Status Inventori ICT</div>
-              <div className="text-xs mt-0.5" style={{ color: '#8892a4' }}>Tersedia vs Dipinjam</div>
-            </div>
-            <div className="flex items-center gap-3 text-xs" style={{ color: '#8892a4' }}>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#4A9EFF] inline-block" />Tersedia</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#F5A623] inline-block" />Dipinjam</span>
-            </div>
-          </div>
-          {ictBarData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={160}>
-              <BarChart data={ictBarData} barGap={4}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
-                <XAxis dataKey="label" tick={{ fill: '#8892a4', fontSize: 9 }} axisLine={false} tickLine={false} />
-                <YAxis hide />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="tersedia" fill="#4A9EFF" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="dipinjam" fill="#F5A623" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex items-center justify-center h-40 text-xs" style={{ color: '#4a5568' }}>
-              Tiada data inventori
-            </div>
-          )}
-        </div>
-
-        {/* Donut Chart — DELIMA */}
-        <div className="rounded-2xl p-5"
-          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <div className="mb-4">
-            <div className="text-sm font-semibold text-white">Pengguna DELIMA</div>
-            <div className="text-xs mt-0.5" style={{ color: '#8892a4' }}>Taburan status</div>
-          </div>
-          {delimaDonut.length > 0 ? (
-            <>
-              <ResponsiveContainer width="100%" height={130}>
-                <PieChart>
-                  <Pie data={delimaDonut} cx="50%" cy="50%" innerRadius={38} outerRadius={58}
-                    dataKey="value" paddingAngle={3}>
-                    {delimaDonut.map((_, i) => (
-                      <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="space-y-1.5 mt-2">
-                {delimaDonut.map((d, i) => (
-                  <div key={i} className="flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-1.5" style={{ color: '#8892a4' }}>
-                      <span className="w-2 h-2 rounded-full flex-shrink-0"
-                        style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }} />
-                      {d.name}
-                    </span>
-                    <span className="font-bold text-white">{d.value}</span>
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : (
-            <div className="flex items-center justify-center h-40 text-xs" style={{ color: '#4a5568' }}>
-              Tiada data DELIMA
-            </div>
-          )}
-        </div>
-      </div>
-
       {/* ── AKTIVITI TERKINI ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
@@ -448,6 +313,137 @@ export default function DashboardUtama() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* ── CHARTS ROW 1: Trend Tempahan + Trend Peminjaman ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+        <div className="rounded-2xl p-5"
+          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <div className="text-sm font-semibold text-white">Trend Tempahan Bilik</div>
+              <div className="text-xs mt-0.5" style={{ color: '#8892a4' }}>6 bulan lepas</div>
+            </div>
+            <span className="text-xl">🏫</span>
+          </div>
+          <ResponsiveContainer width="100%" height={160}>
+            <AreaChart data={tempahanTrend}>
+              <defs>
+                <linearGradient id="blueGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#4A9EFF" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#4A9EFF" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+              <XAxis dataKey="label" tick={{ fill: '#8892a4', fontSize: 10 }} axisLine={false} tickLine={false} />
+              <YAxis hide />
+              <Tooltip content={<CustomTooltip />} />
+              <Area type="monotone" dataKey="count" stroke="#4A9EFF" strokeWidth={2}
+                fill="url(#blueGrad)" dot={{ fill: '#4A9EFF', r: 3 }} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="rounded-2xl p-5"
+          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <div className="text-sm font-semibold text-white">Trend Peminjaman ICT</div>
+              <div className="text-xs mt-0.5" style={{ color: '#8892a4' }}>6 bulan lepas</div>
+            </div>
+            <span className="text-xl">💻</span>
+          </div>
+          <ResponsiveContainer width="100%" height={160}>
+            <AreaChart data={peminjamanTrend}>
+              <defs>
+                <linearGradient id="purpleGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#9B59B6" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#9B59B6" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+              <XAxis dataKey="label" tick={{ fill: '#8892a4', fontSize: 10 }} axisLine={false} tickLine={false} />
+              <YAxis hide />
+              <Tooltip content={<CustomTooltip />} />
+              <Area type="monotone" dataKey="count" stroke="#9B59B6" strokeWidth={2}
+                fill="url(#purpleGrad)" dot={{ fill: '#9B59B6', r: 3 }} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* ── CHARTS ROW 2: Bar Inventori + Donut DELIMA ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+        <div className="lg:col-span-2 rounded-2xl p-5"
+          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <div className="text-sm font-semibold text-white">Status Inventori ICT</div>
+              <div className="text-xs mt-0.5" style={{ color: '#8892a4' }}>Tersedia vs Dipinjam</div>
+            </div>
+            <div className="flex items-center gap-3 text-xs" style={{ color: '#8892a4' }}>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#4A9EFF] inline-block" />Tersedia</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#F5A623] inline-block" />Dipinjam</span>
+            </div>
+          </div>
+          {ictBarData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={160}>
+              <BarChart data={ictBarData} barGap={4}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+                <XAxis dataKey="label" tick={{ fill: '#8892a4', fontSize: 9 }} axisLine={false} tickLine={false} />
+                <YAxis hide />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar dataKey="tersedia" fill="#4A9EFF" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="dipinjam" fill="#F5A623" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-40 text-xs" style={{ color: '#4a5568' }}>
+              Tiada data inventori
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-2xl p-5"
+          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          <div className="mb-4">
+            <div className="text-sm font-semibold text-white">Pengguna DELIMA</div>
+            <div className="text-xs mt-0.5" style={{ color: '#8892a4' }}>Taburan status</div>
+          </div>
+          {delimaDonut.length > 0 ? (
+            <>
+              <ResponsiveContainer width="100%" height={130}>
+                <PieChart>
+                  <Pie data={delimaDonut} cx="50%" cy="50%" innerRadius={38} outerRadius={58}
+                    dataKey="value" paddingAngle={3}>
+                    {delimaDonut.map((_, i) => (
+                      <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<CustomTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="space-y-1.5 mt-2">
+                {delimaDonut.map((d, i) => (
+                  <div key={i} className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1.5" style={{ color: '#8892a4' }}>
+                      <span className="w-2 h-2 rounded-full flex-shrink-0"
+                        style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }} />
+                      {d.name}
+                    </span>
+                    <span className="font-bold text-white">{d.value}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center justify-center h-40 text-xs" style={{ color: '#4a5568' }}>
+              Tiada data DELIMA
+            </div>
+          )}
+        </div>
       </div>
 
     </Layout>
