@@ -13,15 +13,15 @@ export default function Sidebar({ badgeCounts = {} }) {
       style={{ background: '#FFFFFF', borderRight: '1px solid #E5E7EB', boxShadow: '2px 0 12px rgba(0,0,0,0.04)' }}>
 
       {/* Logo */}
-      <div className="p-6" style={{ borderBottom: '1px solid #E5E7EB' }}>
+      <div className="p-5" style={{ borderBottom: '1px solid #E5E7EB' }}>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-lg"
-            style={{ background: 'linear-gradient(135deg, #4F46E5, #7C3AED)' }}>
-            🏛️
-          </div>
-          <div>
-            <div className="text-sm font-bold leading-tight" style={{ color: '#111827' }}>ADMIN PANEL</div>
-            <div className="text-xs" style={{ color: '#6B7280' }}>Sekolah Kebangsaan</div>
+          <img src="https://i.postimg.cc/pdhvk3Q2/images.jpg" alt="Logo SK Darau"
+            className="w-11 h-11 rounded-xl object-cover flex-shrink-0"
+            style={{ border: '1px solid #E5E7EB' }} />
+          <div className="min-w-0">
+            <div className="text-xs font-black leading-tight" style={{ color: '#4F46E5' }}>SK DARAU</div>
+            <div className="text-xs leading-snug mt-0.5" style={{ color: '#374151' }}>Kota Kinabalu</div>
+            <div className="text-xs mt-0.5" style={{ color: '#9CA3AF' }}>Dashboard ICT</div>
           </div>
         </div>
       </div>
@@ -57,14 +57,22 @@ export default function Sidebar({ badgeCounts = {} }) {
 
       {/* User */}
       <div className="p-4" style={{ borderTop: '1px solid #E5E7EB' }}>
-        <div className="flex items-center gap-3 px-3 py-2 rounded-2xl" style={{ background: '#F9FAFB' }}>
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black text-white flex-shrink-0"
-            style={{ background: 'linear-gradient(135deg, #4F46E5, #7C3AED)' }}>
-            KA
+        <div className="px-3 py-3 rounded-2xl" style={{ background: '#F9FAFB' }}>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black text-white flex-shrink-0"
+              style={{ background: 'linear-gradient(135deg, #4F46E5, #7C3AED)' }}>
+              KA
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs font-bold leading-tight" style={{ color: '#111827' }}>En. Khairul Azwani</div>
+              <div className="text-xs" style={{ color: '#6B7280' }}>Guru ICT SK Darau</div>
+            </div>
           </div>
-          <div className="min-w-0">
-            <div className="text-xs font-bold truncate" style={{ color: '#111827' }}>Khairul Azwani</div>
-            <div className="text-xs truncate" style={{ color: '#6B7280' }}>Guru ICT</div>
+          <div className="mt-2.5 pt-2.5" style={{ borderTop: '1px solid #E5E7EB' }}>
+            <div className="text-xs leading-relaxed" style={{ color: '#9CA3AF' }}>
+              Diselenggara oleh<br />
+              <span style={{ color: '#6B7280', fontWeight: 600 }}>En. Khairul Azwani bin Haji Ahinin</span>
+            </div>
           </div>
         </div>
       </div>

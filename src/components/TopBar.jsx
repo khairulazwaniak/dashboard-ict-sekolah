@@ -22,12 +22,18 @@ export default function TopBar({ alertCount = 0 }) {
     <>
       <header className="sticky top-0 z-40 px-4 lg:px-8 py-4 flex items-center justify-between"
         style={{ background: 'rgba(238,242,255,0.92)', backdropFilter: 'blur(12px)', borderBottom: '1px solid #E5E7EB' }}>
-        <div>
-          <div className="text-lg font-bold" style={{ color: '#111827' }}>{title}</div>
-          <div className="text-xs mt-0.5" style={{ color: '#6B7280' }}>
-            {new Date().toLocaleDateString('ms-MY', {
-              weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-            })}
+        <div className="flex items-center gap-3">
+          <img src="https://i.postimg.cc/pdhvk3Q2/images.jpg" alt="Logo SK Darau"
+            className="lg:hidden w-9 h-9 rounded-xl object-cover flex-shrink-0"
+            style={{ border: '1px solid #E5E7EB' }} />
+          <div>
+            <div className="text-lg font-bold leading-tight" style={{ color: '#111827' }}>{title}</div>
+            <div className="text-xs mt-0.5" style={{ color: '#6B7280' }}>
+              SK Darau, Kota Kinabalu •{' '}
+              {new Date().toLocaleDateString('ms-MY', {
+                weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
+              })}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-3">
