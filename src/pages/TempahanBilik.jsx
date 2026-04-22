@@ -138,11 +138,12 @@ export default function TempahanBilik() {
 
   // Room status: setiap bilik, cek ada tempahan approved hari ini
   function getRoomStatus(namaBilik) {
+    const norm = s => s?.trim().toLowerCase()
     const masaHariIni = tempahan.filter(t =>
-      t.bilik === namaBilik && t.tarikh === TODAY && t.status === 'approved'
+      norm(t.bilik) === norm(namaBilik) && t.tarikh === TODAY && t.status === 'approved'
     )
     const pendingBilik = tempahan.find(t =>
-      t.bilik === namaBilik && t.tarikh === TODAY && t.status === 'pending'
+      norm(t.bilik) === norm(namaBilik) && t.tarikh === TODAY && t.status === 'pending'
     )
     if (masaHariIni.length > 0) return 'booked'
     if (pendingBilik) return 'pending'
@@ -770,7 +771,8 @@ function JadualRow({ slot, bilikList, tempahan, tarikh, onBook }) {
       </td>
       {bilikList.map(bilik => {
         const booking = tempahan.find(t =>
-          t.bilik === bilik.nama && t.tarikh === tarikh && slotDalamRange(t.masa, slot.masa)
+          t.bilik?.trim().toLowerCase() === bilik.nama?.trim().toLowerCase() &&
+          t.tarikh === tarikh && slotDalamRange(t.masa, slot.masa)
         )
         if (!booking) {
           return (
