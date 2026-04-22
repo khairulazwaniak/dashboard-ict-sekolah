@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import Layout from '../components/Layout'
 import SectionHeader from '../components/SectionHeader'
@@ -44,10 +44,95 @@ export default function SistemIDDelima() {
   const [formGuru, setFormGuru] = useState({ nama: '', no_pekerja: '', email: '', no_tel: '', subjek: '', gred: 'DG41' })
   const [formMurid, setFormMurid] = useState({ nama: '', no_kad: '', email: '', kelas: '', jantina: 'L' })
   const [pwForm, setPwForm] = useState({ baru: '', sahkan: '', show: false })
+  const [importing, setImporting] = useState(false)
+  const importGuruRef = useRef(null)
+  const importMuridRef = useRef(null)
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type })
     setTimeout(() => setToast(null), 2800)
+  }
+
+  function exportCSV(jenis) {
+    const data = jenis === 'guru' ? guru : murid
+    const headers = jenis === 'guru'
+      ? ['id_delima', 'nama', 'no_pekerja', 'email', 'no_tel', 'subjek', 'gred', 'status']
+      : ['id_delima', 'nama', 'no_kad', 'email', 'kelas', 'jantina', 'status']
+    const escape = v => `"${(v ?? '').toString().replace(/"/g, '""')}"`
+    const rows = data.map(d => headers.map(h => escape(d[h])).join(','))
+    const csv = [headers.join(','), ...rows].join('\n')
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `delima_${jenis}_${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  function downloadTemplate(jenis) {
+    const headers = jenis === 'guru'
+      ? 'id_delima,nama,no_pekerja,email,no_tel,subjek,gred,status'
+      : 'id_delima,nama,no_kad,email,kelas,jantina,status'
+    const sample = jenis === 'guru'
+      ? 'AIR2024001,Ahmad bin Ali,G10001,ahmad@moe.edu.my,0123456789,Matematik,DG41,aktif'
+      : 'MR2024001,Siti binti Abu,010101010101,siti@murid.edu.my,6 Amanah,P,aktif'
+    const csv = [headers, sample].join('\n')
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `template_${jenis}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  function parseCSV(text) {
+    const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim().split('\n')
+    if (lines.length < 2) return []
+    const parseRow = line => {
+      const result = []
+      let cur = '', inQ = false
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i]
+        if (ch === '"') { if (inQ && line[i+1] === '"') { cur += '"'; i++ } else inQ = !inQ }
+        else if (ch === ',' && !inQ) { result.push(cur.trim()); cur = '' }
+        else cur += ch
+      }
+      result.push(cur.trim())
+      return result
+    }
+    const headers = parseRow(lines[0])
+    return lines.slice(1).map(line => {
+      const vals = parseRow(line)
+      const obj = {}
+      headers.forEach((h, i) => { obj[h] = vals[i] ?? '' })
+      return obj
+    }).filter(r => r.nama?.trim())
+  }
+
+  async function importCSV(jenis, e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+    setImporting(true)
+    try {
+      const text = await file.text()
+      const rows = parseCSV(text)
+      if (!rows.length) { showToast('Tiada data dalam fail CSV!', 'error'); return }
+      const table = jenis === 'guru' ? 'guru_delima' : 'murid_delima'
+      const toInsert = rows.map(r => ({
+        ...r,
+        status: r.status || 'aktif',
+        last_login: r.last_login || '—',
+      }))
+      const { error } = await supabase.from(table).upsert(toInsert, { onConflict: 'id_delima' })
+      if (error) { showToast('Ralat import: ' + error.message, 'error'); return }
+      showToast(`✅ ${toInsert.length} rekod berjaya diimport!`)
+      fetchData()
+    } finally {
+      setImporting(false)
+    }
   }
 
   async function fetchData() {
@@ -338,20 +423,41 @@ export default function SistemIDDelima() {
       {/* ── SENARAI ── */}
       {tab === 'senarai' && (
         <>
-          <div className="flex items-center gap-2">
-            <div className="flex gap-2 bg-white border border-gray-200 rounded-2xl p-1.5 flex-1">
-              {['guru', 'murid'].map(s => (
-                <button key={s} onClick={() => { setSubTab(s); setCarian('') }}
-                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
-                    subTab === s ? 'bg-violet-600 text-white' : 'text-gray-400'
-                  }`}>
-                  {s === 'guru' ? `👨‍🏫 Guru (${guru.length})` : `🎓 Murid (${murid.length})`}
-                </button>
-              ))}
-            </div>
+          {/* Hidden file inputs */}
+          <input ref={importGuruRef} type="file" accept=".csv" className="hidden"
+            onChange={e => importCSV('guru', e)} />
+          <input ref={importMuridRef} type="file" accept=".csv" className="hidden"
+            onChange={e => importCSV('murid', e)} />
+
+          <div className="flex gap-2 bg-white border border-gray-200 rounded-2xl p-1.5">
+            {['guru', 'murid'].map(s => (
+              <button key={s} onClick={() => { setSubTab(s); setCarian('') }}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                  subTab === s ? 'bg-violet-600 text-white' : 'text-gray-400'
+                }`}>
+                {s === 'guru' ? `👨‍🏫 Guru (${guru.length})` : `🎓 Murid (${murid.length})`}
+              </button>
+            ))}
+          </div>
+
+          {/* CSV actions */}
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => exportCSV(subTab)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors">
+              📥 Export CSV
+            </button>
+            <button onClick={() => (subTab === 'guru' ? importGuruRef : importMuridRef).current?.click()}
+              disabled={importing}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border border-violet-200 text-violet-700 bg-violet-50 hover:bg-violet-100 transition-colors disabled:opacity-60">
+              {importing ? '⏳ Importing...' : '📤 Import CSV'}
+            </button>
+            <button onClick={() => downloadTemplate(subTab)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">
+              📋 Template
+            </button>
             <button onClick={() => window.print()}
-              className="no-print flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border border-gray-200 text-gray-600 hover:border-violet-500 hover:text-violet-600 transition-colors">
-              🖨️ Print Roster
+              className="no-print flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border border-gray-200 text-gray-600 hover:border-violet-500 hover:text-violet-600 transition-colors">
+              🖨️ Print
             </button>
           </div>
 
