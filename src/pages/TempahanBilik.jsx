@@ -206,7 +206,7 @@ export default function TempahanBilik() {
           <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5">
             <SectionHeader icon="🏫" title="Status Bilik Khas" color="text-sky-400" />
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
-              {BILIK_LIST.map(b => {
+              {bilikList.map(b => {
                 const status = getRoomStatus(b.nama)
                 const styles = {
                   available: 'bg-emerald-950/30 border-emerald-800',
@@ -299,7 +299,7 @@ export default function TempahanBilik() {
                   <th className="p-3 text-left text-gray-400 font-semibold border-b border-r border-gray-800 w-32 sticky left-0" style={{ background: '#1a1d27' }}>
                     Masa
                   </th>
-                  {BILIK_LIST.map(b => (
+                  {bilikList.map(b => (
                     <th key={b.nama} className="p-2 text-center text-gray-300 font-semibold border-b border-r border-gray-800 min-w-[100px]">
                       <div>{b.icon}</div>
                       <div className="text-xs leading-tight mt-0.5">{b.nama}</div>
@@ -310,7 +310,7 @@ export default function TempahanBilik() {
               <tbody>
                 {/* Sesi Pagi header */}
                 <tr style={{ background: 'rgba(74,158,255,0.05)' }}>
-                  <td colSpan={BILIK_LIST.length + 1}
+                  <td colSpan={bilikList.length + 1}
                     className="px-3 py-1.5 text-xs font-bold border-b border-gray-800"
                     style={{ color: '#4A9EFF' }}>
                     ☀️ SESI PAGI
@@ -325,7 +325,7 @@ export default function TempahanBilik() {
                           style={{ background: '#0f1117' }}>
                           09:50–10:10
                         </td>
-                        <td colSpan={BILIK_LIST.length}
+                        <td colSpan={bilikList.length}
                           className="text-center py-2 border-b border-gray-800 font-bold"
                           style={{ background: 'rgba(74,158,255,0.05)', color: '#4A9EFF' }}>
                           — WAKTU REHAT —
@@ -334,7 +334,7 @@ export default function TempahanBilik() {
                     )
                   }
                   return (
-                    <JadualRow key={slot.masa} slot={slot} bilikList={BILIK_LIST}
+                    <JadualRow key={slot.masa} slot={slot} bilikList={bilikList}
                       tempahan={tempahan} tarikh={jadualDate} onBook={(bilik, masa) => {
                         setTab('tempah')
                       }} />
@@ -343,7 +343,7 @@ export default function TempahanBilik() {
 
                 {/* Sesi Petang header */}
                 <tr style={{ background: 'rgba(245,166,35,0.05)' }}>
-                  <td colSpan={BILIK_LIST.length + 1}
+                  <td colSpan={bilikList.length + 1}
                     className="px-3 py-1.5 text-xs font-bold border-b border-gray-800"
                     style={{ color: '#F5A623' }}>
                     🌙 SESI PETANG
@@ -351,7 +351,7 @@ export default function TempahanBilik() {
                 </tr>
 
                 {SLOT_PETANG.map(slot => (
-                  <JadualRow key={slot.masa} slot={slot} bilikList={BILIK_LIST}
+                  <JadualRow key={slot.masa} slot={slot} bilikList={bilikList}
                     tempahan={tempahan} tarikh={jadualDate} onBook={(bilik, masa) => {
                       setTab('tempah')
                     }} />
@@ -386,7 +386,7 @@ export default function TempahanBilik() {
             <select value={form.bilik} onChange={e => setForm(p => ({ ...p, bilik: e.target.value }))}
               className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500">
               <option value="">-- Pilih Bilik --</option>
-              {BILIK_LIST.map(b => <option key={b.nama}>{b.nama}</option>)}
+              {bilikList.map(b => <option key={b.nama}>{b.nama}</option>)}
             </select>
           </div>
 
