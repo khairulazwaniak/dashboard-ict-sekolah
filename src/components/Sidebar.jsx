@@ -54,12 +54,13 @@ export default function Sidebar({ badgeCounts = {} }) {
       {/* User */}
       <div className="p-4 border-t border-gray-800">
         <div className="flex items-center gap-3 px-3 py-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-purple-600 rounded-lg flex items-center justify-center text-sm">
-            👤
+          <div style={{ background: 'linear-gradient(135deg, #4A9EFF, #9B59B6)' }}
+            className="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-black text-white flex-shrink-0">
+            KA
           </div>
-          <div>
-            <div className="text-xs font-semibold text-white">Pentadbir</div>
-            <div className="text-xs text-gray-500">admin@sekolah.edu.my</div>
+          <div className="min-w-0">
+            <div className="text-xs font-bold text-white truncate">Khairul Azwani</div>
+            <div className="text-xs text-gray-500 truncate">Guru ICT</div>
           </div>
         </div>
       </div>

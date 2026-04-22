@@ -20,9 +20,35 @@ const STATUS_CONFIG = {
   rejected: { dot: 'bg-red-400',     badge: 'bg-red-100 text-red-700',         label: 'Tolak',  btn: 'bg-red-900/40 border-red-700 text-red-400' },
 }
 
+// Slot masa 30 minit ikut waktu sekolah
+const SLOT_PAGI = [
+  { masa: '06:50–07:20', label: 'P1' },
+  { masa: '07:20–07:50', label: 'P2' },
+  { masa: '07:50–08:20', label: 'P3' },
+  { masa: '08:20–08:50', label: 'P4' },
+  { masa: '08:50–09:20', label: 'P5' },
+  { masa: '09:20–09:50', label: 'P6' },
+  { masa: 'REHAT',       label: '—',  rehat: true },
+  { masa: '10:10–10:40', label: 'P7' },
+  { masa: '10:40–11:10', label: 'P8' },
+  { masa: '11:10–11:40', label: 'P9' },
+  { masa: '11:40–12:10', label: 'P10' },
+]
+const SLOT_PETANG = [
+  { masa: '12:30–13:00', label: 'T1' },
+  { masa: '13:00–13:30', label: 'T2' },
+  { masa: '13:30–14:00', label: 'T3' },
+  { masa: '14:00–14:30', label: 'T4' },
+  { masa: '14:30–15:00', label: 'T5' },
+  { masa: '15:00–15:30', label: 'T6' },
+  { masa: '15:30–16:00', label: 'T7' },
+  { masa: '16:00–16:30', label: 'T8' },
+  { masa: '16:30–17:00', label: 'T9' },
+  { masa: '17:00–17:20', label: 'T10' },
+]
 const MASA_LIST = [
-  '07:30–08:30', '08:30–09:30', '09:30–10:30', '10:30–11:30',
-  '11:30–12:30', '14:00–15:00', '15:00–16:00', '16:00–17:00',
+  ...SLOT_PAGI.filter(s => !s.rehat).map(s => s.masa),
+  ...SLOT_PETANG.map(s => s.masa),
 ]
 
 const TODAY = new Date().toISOString().slice(0, 10)
@@ -34,6 +60,7 @@ export default function TempahanBilik() {
   const [modal, setModal] = useState(null)
   const [toast, setToast] = useState(null)
   const [filterStatus, setFilterStatus] = useState('semua')
+  const [jadualDate, setJadualDate] = useState(TODAY)
 
   const [form, setForm] = useState({
     guru: '', bilik: '', tarikh: TODAY, masa: '', tujuan: '',
@@ -101,6 +128,7 @@ export default function TempahanBilik() {
 
   const TABS = [
     { id: 'dashboard', label: '🏠 Utama' },
+    { id: 'jadual',    label: '📅 Jadual' },
     { id: 'tempah',    label: '➕ Tempah' },
     { id: 'senarai',   label: '📋 Senarai' },
     { id: 'admin',     label: '⚙️ Admin' },
@@ -206,6 +234,106 @@ export default function TempahanBilik() {
                 <div className="text-center text-xs text-gray-500 py-6">Tiada rekod tempahan</div>
               )}
             </div>
+          </div>
+        </>
+      )}
+
+      {/* ── JADUAL MASA ── */}
+      {tab === 'jadual' && (
+        <>
+          {/* Date picker */}
+          <div className="flex items-center gap-3">
+            <label className="text-xs font-semibold text-sky-400">Pilih Tarikh:</label>
+            <input type="date" value={jadualDate}
+              onChange={e => setJadualDate(e.target.value)}
+              className="bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500" />
+            <span className="text-xs text-gray-500">
+              {new Date(jadualDate).toLocaleDateString('ms-MY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+            </span>
+          </div>
+
+          {/* Legend */}
+          <div className="flex gap-4 text-xs">
+            {[
+              { color: 'bg-emerald-900/60 border-emerald-700 text-emerald-400', label: 'Lulus' },
+              { color: 'bg-amber-900/60 border-amber-700 text-amber-400',       label: 'Tunggu' },
+              { color: 'bg-gray-800 border-gray-700 text-gray-500',             label: 'Kosong' },
+              { color: 'bg-blue-950/60 border-blue-800 text-blue-400',          label: 'Rehat' },
+            ].map(l => (
+              <div key={l.label} className="flex items-center gap-1.5">
+                <div className={`w-3 h-3 rounded border ${l.color}`} />
+                <span className="text-gray-400">{l.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Timetable — scroll horizontal */}
+          <div className="overflow-x-auto rounded-2xl border border-gray-800">
+            <table className="w-full min-w-[700px] border-collapse text-xs">
+              <thead>
+                <tr style={{ background: '#1a1d27' }}>
+                  <th className="p-3 text-left text-gray-400 font-semibold border-b border-r border-gray-800 w-32 sticky left-0" style={{ background: '#1a1d27' }}>
+                    Masa
+                  </th>
+                  {BILIK_LIST.map(b => (
+                    <th key={b.nama} className="p-2 text-center text-gray-300 font-semibold border-b border-r border-gray-800 min-w-[100px]">
+                      <div>{b.icon}</div>
+                      <div className="text-xs leading-tight mt-0.5">{b.nama}</div>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {/* Sesi Pagi header */}
+                <tr style={{ background: 'rgba(74,158,255,0.05)' }}>
+                  <td colSpan={BILIK_LIST.length + 1}
+                    className="px-3 py-1.5 text-xs font-bold border-b border-gray-800"
+                    style={{ color: '#4A9EFF' }}>
+                    ☀️ SESI PAGI
+                  </td>
+                </tr>
+
+                {SLOT_PAGI.map((slot, i) => {
+                  if (slot.rehat) {
+                    return (
+                      <tr key="rehat" style={{ background: 'rgba(74,158,255,0.03)' }}>
+                        <td className="px-3 py-2 font-bold border-b border-r border-gray-800 sticky left-0 text-blue-400"
+                          style={{ background: '#0f1117' }}>
+                          09:50–10:10
+                        </td>
+                        <td colSpan={BILIK_LIST.length}
+                          className="text-center py-2 border-b border-gray-800 font-bold"
+                          style={{ background: 'rgba(74,158,255,0.05)', color: '#4A9EFF' }}>
+                          — WAKTU REHAT —
+                        </td>
+                      </tr>
+                    )
+                  }
+                  return (
+                    <JadualRow key={slot.masa} slot={slot} bilikList={BILIK_LIST}
+                      tempahan={tempahan} tarikh={jadualDate} onBook={(bilik, masa) => {
+                        setTab('tempah')
+                      }} />
+                  )
+                })}
+
+                {/* Sesi Petang header */}
+                <tr style={{ background: 'rgba(245,166,35,0.05)' }}>
+                  <td colSpan={BILIK_LIST.length + 1}
+                    className="px-3 py-1.5 text-xs font-bold border-b border-gray-800"
+                    style={{ color: '#F5A623' }}>
+                    🌙 SESI PETANG
+                  </td>
+                </tr>
+
+                {SLOT_PETANG.map(slot => (
+                  <JadualRow key={slot.masa} slot={slot} bilikList={BILIK_LIST}
+                    tempahan={tempahan} tarikh={jadualDate} onBook={(bilik, masa) => {
+                      setTab('tempah')
+                    }} />
+                ))}
+              </tbody>
+            </table>
           </div>
         </>
       )}
@@ -417,5 +545,50 @@ export default function TempahanBilik() {
       )}
 
     </Layout>
+  )
+}
+
+function JadualRow({ slot, bilikList, tempahan, tarikh, onBook }) {
+  return (
+    <tr className="hover:bg-white/[0.02] transition-colors">
+      <td className="px-3 py-2 font-mono font-semibold border-b border-r border-gray-800 sticky left-0 text-gray-300 text-xs"
+        style={{ background: '#0f1117' }}>
+        <span className="text-gray-600 mr-1">{slot.label}</span>
+        {slot.masa}
+      </td>
+      {bilikList.map(bilik => {
+        const booking = tempahan.find(t =>
+          t.bilik === bilik.nama && t.tarikh === tarikh && t.masa === slot.masa
+        )
+        if (!booking) {
+          return (
+            <td key={bilik.nama} className="p-1 border-b border-r border-gray-800 text-center">
+              <button onClick={() => onBook(bilik.nama, slot.masa)}
+                className="w-full h-8 rounded-lg text-xs text-gray-600 hover:bg-sky-900/30 hover:text-sky-400 transition-all">
+                +
+              </button>
+            </td>
+          )
+        }
+        const isApproved = booking.status === 'approved'
+        const isPending  = booking.status === 'pending'
+        return (
+          <td key={bilik.nama} className="p-1 border-b border-r border-gray-800">
+            <div className={`rounded-lg px-1.5 py-1 text-center border ${
+              isApproved ? 'bg-emerald-900/40 border-emerald-800 text-emerald-300' :
+              isPending  ? 'bg-amber-900/40 border-amber-800 text-amber-300' :
+                           'bg-red-900/40 border-red-800 text-red-300'
+            }`}>
+              <div className="text-xs font-bold truncate">{booking.guru}</div>
+              <div className={`text-xs mt-0.5 ${
+                isApproved ? 'text-emerald-500' : isPending ? 'text-amber-500' : 'text-red-500'
+              }`}>
+                {isApproved ? '✓ Lulus' : isPending ? '⏳ Tunggu' : '✗ Tolak'}
+              </div>
+            </div>
+          </td>
+        )
+      })}
+    </tr>
   )
 }
