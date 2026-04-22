@@ -338,15 +338,21 @@ export default function SistemIDDelima() {
       {/* ── SENARAI ── */}
       {tab === 'senarai' && (
         <>
-          <div className="flex gap-2 bg-gray-900 border border-gray-800 rounded-2xl p-1.5">
-            {['guru', 'murid'].map(s => (
-              <button key={s} onClick={() => { setSubTab(s); setCarian('') }}
-                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
-                  subTab === s ? 'bg-violet-600 text-white' : 'text-gray-400'
-                }`}>
-                {s === 'guru' ? `👨‍🏫 Guru (${guru.length})` : `🎓 Murid (${murid.length})`}
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            <div className="flex gap-2 bg-gray-900 border border-gray-800 rounded-2xl p-1.5 flex-1">
+              {['guru', 'murid'].map(s => (
+                <button key={s} onClick={() => { setSubTab(s); setCarian('') }}
+                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                    subTab === s ? 'bg-violet-600 text-white' : 'text-gray-400'
+                  }`}>
+                  {s === 'guru' ? `👨‍🏫 Guru (${guru.length})` : `🎓 Murid (${murid.length})`}
+                </button>
+              ))}
+            </div>
+            <button onClick={() => window.print()}
+              className="no-print flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border border-gray-700 text-gray-300 hover:border-violet-500 hover:text-violet-400 transition-colors">
+              🖨️ Print Roster
+            </button>
           </div>
 
           <div className="relative">

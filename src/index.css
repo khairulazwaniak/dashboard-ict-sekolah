@@ -41,3 +41,19 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+@media print {
+  header, nav, aside, .no-print { display: none !important; }
+  body { background: white !important; color: black !important; }
+  main { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
+  .bg-gray-900, .bg-gray-800, [style*="background"] {
+    background: white !important;
+    border-color: #ccc !important;
+    color: black !important;
+  }
+  .text-white, .text-gray-400, .text-gray-500 { color: black !important; }
+  table { border-collapse: collapse; width: 100%; }
+  td, th { border: 1px solid #999; padding: 5px 8px; font-size: 10px; color: black; }
+  th { background: #eee !important; font-weight: bold; }
+  button { display: none !important; }
+}

@@ -115,9 +115,22 @@ export default function TempahanBilik() {
     return 'available'
   }
 
+  // Semak status slot semasa isi borang
+  const slotKonflik = form.bilik && form.tarikh && form.masa
+    ? tempahan.find(t =>
+        t.bilik === form.bilik &&
+        t.tarikh === form.tarikh &&
+        t.masa === form.masa &&
+        t.status !== 'rejected'
+      )
+    : null
+
   async function submitTempahan() {
     if (!form.guru || !form.bilik || !form.tarikh || !form.masa) {
       showToast('Sila lengkapkan semua maklumat!', 'error'); return
+    }
+    if (slotKonflik) {
+      showToast(`⚠️ Slot ini sudah ditempah oleh ${slotKonflik.guru}!`, 'error'); return
     }
     const { error } = await supabase.from('tempahan_bilik').insert([{
       guru: form.guru, bilik: form.bilik, tarikh: form.tarikh,
@@ -128,6 +141,14 @@ export default function TempahanBilik() {
     showToast('✅ Tempahan berjaya dihantar!')
     fetchTempahan()
     setTab('senarai')
+  }
+
+  async function bulkApprove() {
+    const pendingIds = tempahan.filter(t => t.status === 'pending').map(t => t.id)
+    if (!pendingIds.length) return
+    await supabase.from('tempahan_bilik').update({ status: 'approved' }).in('id', pendingIds)
+    showToast(`✅ ${pendingIds.length} tempahan diluluskan sekaligus!`)
+    fetchTempahan()
   }
 
   async function deleteTempahan(id) {
@@ -265,6 +286,14 @@ export default function TempahanBilik() {
       {/* ── JADUAL MASA ── */}
       {tab === 'jadual' && (
         <>
+          {/* Print button */}
+          <div className="flex justify-end no-print">
+            <button onClick={() => window.print()}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border border-gray-700 text-gray-300 hover:border-sky-500 hover:text-sky-400 transition-colors">
+              🖨️ Print Jadual
+            </button>
+          </div>
+
           {/* Date picker */}
           <div className="flex items-center gap-3">
             <label className="text-xs font-semibold text-sky-400">Pilih Tarikh:</label>
@@ -400,10 +429,21 @@ export default function TempahanBilik() {
             <div>
               <label className="block text-xs font-semibold text-sky-400 mb-1.5">Masa *</label>
               <select value={form.masa} onChange={e => setForm(p => ({ ...p, masa: e.target.value }))}
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500">
+                className={`w-full bg-gray-800 border rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none ${
+                  slotKonflik ? 'border-red-600 focus:border-red-500' : 'border-gray-700 focus:border-sky-500'
+                }`}>
                 <option value="">-- Pilih Masa --</option>
                 {MASA_LIST.map(m => <option key={m}>{m}</option>)}
               </select>
+              {slotKonflik && (
+                <div className="mt-1.5 flex items-center gap-1.5 text-xs font-semibold text-red-400">
+                  🔴 Slot ini sudah ditempah oleh <span className="font-bold">{slotKonflik.guru}</span>
+                  {slotKonflik.status === 'pending' && ' (menunggu lulus)'}
+                </div>
+              )}
+              {!slotKonflik && form.bilik && form.tarikh && form.masa && (
+                <div className="mt-1.5 text-xs font-semibold text-emerald-400">🟢 Slot ini kosong</div>
+              )}
             </div>
           </div>
 
@@ -474,7 +514,15 @@ export default function TempahanBilik() {
       {tab === 'admin' && (
         <AdminGate>
           <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5">
-            <SectionHeader icon="⏳" title="Menunggu Kelulusan" color="text-amber-400" />
+            <div className="flex items-center justify-between">
+              <SectionHeader icon="⏳" title="Menunggu Kelulusan" color="text-amber-400" />
+              {pendingCount > 1 && (
+                <button onClick={bulkApprove}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-bold hover:bg-emerald-500/30 transition-colors">
+                  ✅ Luluskan Semua ({pendingCount})
+                </button>
+              )}
+            </div>
             <div className="space-y-3 mt-4">
               {tempahan.filter(t => t.status === 'pending').map(t => (
                 <div key={t.id} className="bg-gray-800 rounded-2xl p-4">

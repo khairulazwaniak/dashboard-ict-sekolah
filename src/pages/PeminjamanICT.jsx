@@ -338,7 +338,8 @@ export default function PeminjamanICT() {
       {/* ── SENARAI ── */}
       {tab === 'senarai' && (
         <>
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+          <div className="flex items-center justify-between no-print">
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
             {['semua', 'dipinjam', 'lewat', 'dipulangkan'].map(s => (
               <button key={s} onClick={() => setFilterStatus(s)}
                 className={`px-4 py-1.5 rounded-full text-xs font-bold border whitespace-nowrap transition-all ${
@@ -349,6 +350,11 @@ export default function PeminjamanICT() {
                 {s === 'semua' ? 'Semua' : STATUS_CONFIG[s]?.label}
               </button>
             ))}
+            </div>
+            <button onClick={() => window.print()}
+              className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border border-gray-700 text-gray-300 hover:border-indigo-500 hover:text-indigo-400 transition-colors">
+              🖨️ Print
+            </button>
           </div>
 
           <div className="space-y-3">
