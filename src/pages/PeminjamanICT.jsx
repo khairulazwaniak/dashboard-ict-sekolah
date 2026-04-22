@@ -112,13 +112,14 @@ export default function PeminjamanICT() {
   async function tambahBarang() {
     if (!formBarang.nama || !formBarang.kod) { showToast('Sila isi nama dan kod barang!', 'error'); return }
     const qty = parseInt(formBarang.kuantiti) || 1
-    const { error } = await supabase.from('barang_ict').insert([{
+    const { data, error } = await supabase.from('barang_ict').insert([{
       ...formBarang, kuantiti: qty, tersedia: qty,
-    }])
+    }]).select().single()
     if (error) { showToast('Ralat: ' + error.message, 'error'); return }
     setFormBarang({ nama: '', kod: '', kategori: 'Laptop', kuantiti: 1 })
-    showToast('✅ Barang berjaya ditambah!')
+    showToast('✅ Barang berjaya ditambah! Jana QR sekarang.')
     fetchData()
+    if (data) setQrModal(data)
   }
 
   async function deletePeminjaman(rec) {
