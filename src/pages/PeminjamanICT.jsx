@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import Layout from '../components/Layout'
 import SectionHeader from '../components/SectionHeader'
 import AdminGate from '../components/AdminGate'
 import { useAdmin } from '../contexts/AdminContext'
+import { QRCodeSVG } from 'qrcode.react'
 
 const KATEGORI_ICON = {
   Laptop: '💻', Projektor: '📽️', Tablet: '📱',
@@ -44,6 +45,9 @@ export default function PeminjamanICT() {
   })
 
   const [formBarang, setFormBarang] = useState({ nama: '', kod: '', kategori: 'Laptop', kuantiti: 1 })
+  const [qrModal, setQrModal] = useState(null)
+  const qrRef = useRef(null)
+  const BASE_URL = window.location.origin
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type })
@@ -496,8 +500,13 @@ export default function PeminjamanICT() {
                     <div className="text-xs font-bold text-gray-900 truncate">{item.nama}</div>
                     <div className="text-xs text-gray-500">{item.kod} • {item.tersedia}/{item.kuantiti} tersedia</div>
                   </div>
+                  <button onClick={() => setQrModal(item)}
+                    className="text-xs px-2.5 py-1.5 rounded-lg font-bold transition-colors flex-shrink-0"
+                    style={{ background: '#EEF2FF', color: '#4F46E5', border: '1px solid #C7D2FE' }}>
+                    📱 QR
+                  </button>
                   <button onClick={() => deleteBarang(item.id)}
-                    className="text-xs text-red-500 hover:text-red-400 px-2 py-1 rounded-lg hover:bg-red-900/30 transition-colors flex-shrink-0">
+                    className="text-xs text-red-500 hover:text-red-400 px-2 py-1 rounded-lg hover:bg-red-50 transition-colors flex-shrink-0">
                     🗑️
                   </button>
                 </div>
@@ -506,6 +515,93 @@ export default function PeminjamanICT() {
             </div>
           </div>
         </AdminGate>
+      )}
+
+      {/* ── QR MODAL ── */}
+      {qrModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+          onClick={e => e.target === e.currentTarget && setQrModal(null)}>
+          <div className="rounded-3xl p-6 w-full max-w-xs"
+            style={{ background: '#FFFFFF', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+
+            {/* Print target */}
+            <div ref={qrRef} id="qr-print-area"
+              className="text-center p-5 rounded-2xl"
+              style={{ background: '#FFFFFF', border: '2px solid #E5E7EB' }}>
+              <img src="https://i.postimg.cc/pdhvk3Q2/images.jpg" alt="SK Darau"
+                className="w-12 h-12 rounded-xl object-cover mx-auto mb-2"
+                style={{ border: '1px solid #E5E7EB' }} />
+              <div className="text-xs font-black mb-0.5" style={{ color: '#4F46E5' }}>SK DARAU</div>
+              <div className="text-xs text-gray-500 mb-3">Kota Kinabalu, Sabah</div>
+
+              <div className="flex justify-center mb-3">
+                <QRCodeSVG
+                  value={`${BASE_URL}/pinjam/${qrModal.id}`}
+                  size={160}
+                  bgColor="#FFFFFF"
+                  fgColor="#1E1B4B"
+                  level="M"
+                  includeMargin={false}
+                />
+              </div>
+
+              <div className="text-sm font-black text-gray-900 mb-0.5">{qrModal.nama}</div>
+              <div className="text-xs text-gray-500 mb-1">{qrModal.kod}</div>
+              <div className="text-xs font-semibold px-3 py-1 rounded-full inline-block"
+                style={{ background: '#EEF2FF', color: '#4F46E5' }}>
+                Imbas untuk pinjam
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-4">
+              <button onClick={() => {
+                const w = window.open('', '_blank')
+                const svg = document.querySelector('#qr-print-area svg')
+                const svgData = svg ? new XMLSerializer().serializeToString(svg) : ''
+                const svgB64 = btoa(unescape(encodeURIComponent(svgData)))
+                w.document.write(`<!DOCTYPE html><html><head><title>QR - ${qrModal.nama}</title>
+                  <style>
+                    body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #EEF2FF; font-family: sans-serif; }
+                    .card { background: white; border: 2px solid #E5E7EB; border-radius: 20px; padding: 32px; text-align: center; max-width: 300px; }
+                    img.logo { width: 56px; height: 56px; border-radius: 12px; object-fit: cover; border: 1px solid #E5E7EB; margin-bottom: 8px; }
+                    .sekolah { font-size: 11px; font-weight: 900; color: #4F46E5; margin-bottom: 2px; }
+                    .lokasi { font-size: 10px; color: #6B7280; margin-bottom: 16px; }
+                    .qr-img { width: 180px; height: 180px; margin: 0 auto 12px; display: block; }
+                    .nama { font-size: 15px; font-weight: 900; color: #111827; margin-bottom: 2px; }
+                    .kod { font-size: 11px; color: #6B7280; margin-bottom: 8px; }
+                    .badge { display: inline-block; background: #EEF2FF; color: #4F46E5; font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 20px; }
+                    @media print { body { background: white; } }
+                  </style>
+                </head><body>
+                  <div class="card">
+                    <img class="logo" src="https://i.postimg.cc/pdhvk3Q2/images.jpg" />
+                    <div class="sekolah">SK DARAU</div>
+                    <div class="lokasi">Kota Kinabalu, Sabah</div>
+                    <img class="qr-img" src="data:image/svg+xml;base64,${svgB64}" />
+                    <div class="nama">${qrModal.nama}</div>
+                    <div class="kod">${qrModal.kod}</div>
+                    <div class="badge">Imbas untuk pinjam</div>
+                  </div>
+                  <script>window.onload=()=>window.print()</script>
+                </body></html>`)
+                w.document.close()
+              }}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white transition-opacity hover:opacity-90"
+                style={{ background: 'linear-gradient(135deg, #4F46E5, #7C3AED)' }}>
+                🖨️ Print QR
+              </button>
+              <button onClick={() => setQrModal(null)}
+                className="px-4 py-2.5 rounded-xl text-sm font-medium"
+                style={{ background: '#F3F4F6', color: '#374151' }}>
+                Tutup
+              </button>
+            </div>
+
+            <div className="mt-3 text-xs text-center text-gray-400 break-all">
+              {BASE_URL}/pinjam/{qrModal.id}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── MODAL ── */}
