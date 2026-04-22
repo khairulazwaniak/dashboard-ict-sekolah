@@ -1,0 +1,550 @@
+import { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
+import Layout from '../components/Layout'
+import SectionHeader from '../components/SectionHeader'
+
+const STATUS_GURU = {
+  aktif:       { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Aktif' },
+  tidak_aktif: { bg: 'bg-slate-700',   text: 'text-slate-300',   label: 'Tidak Aktif' },
+  cuti:        { bg: 'bg-amber-100',   text: 'text-amber-700',   label: 'Cuti' },
+}
+
+const STATUS_MURID = {
+  aktif:         { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Aktif' },
+  kunci:         { bg: 'bg-red-100',     text: 'text-red-700',     label: 'Dikunci' },
+  tukar_sekolah: { bg: 'bg-slate-700',   text: 'text-slate-300',   label: 'Tukar Sekolah' },
+  tidak_aktif:   { bg: 'bg-amber-100',   text: 'text-amber-700',   label: 'Tidak Aktif' },
+}
+
+const GRED_LIST = ['DG29','DG32','DG34','DG38','DG41','DG44','DG48','DG52','DG54']
+
+const generatePassword = () => {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#'
+  return Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
+}
+
+function StatusBadge({ status, map }) {
+  const s = map[status] ?? { bg: 'bg-slate-700', text: 'text-slate-300', label: status }
+  return <span className={`text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${s.bg} ${s.text}`}>{s.label}</span>
+}
+
+export default function SistemIDDelima() {
+  const [tab, setTab] = useState('dashboard')
+  const [subTab, setSubTab] = useState('guru')
+  const [guru, setGuru] = useState([])
+  const [murid, setMurid] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [modal, setModal] = useState(null)
+  const [toast, setToast] = useState(null)
+  const [carian, setCarian] = useState('')
+
+  const [formGuru, setFormGuru] = useState({ nama: '', no_pekerja: '', email: '', no_tel: '', subjek: '', gred: 'DG41' })
+  const [formMurid, setFormMurid] = useState({ nama: '', no_kad: '', email: '', kelas: '', jantina: 'L' })
+  const [pwForm, setPwForm] = useState({ baru: '', sahkan: '', show: false })
+
+  const showToast = (msg, type = 'success') => {
+    setToast({ msg, type })
+    setTimeout(() => setToast(null), 2800)
+  }
+
+  async function fetchData() {
+    setLoading(true)
+    const [{ data: g }, { data: m }] = await Promise.all([
+      supabase.from('guru_delima').select('*').order('nama'),
+      supabase.from('murid_delima').select('*').order('nama'),
+    ])
+    setGuru(g ?? [])
+    setMurid(m ?? [])
+    setLoading(false)
+  }
+
+  useEffect(() => { fetchData() }, [])
+
+  const stats = {
+    guruAktif:  guru.filter(g => g.status === 'aktif').length,
+    muridAktif: murid.filter(m => m.status === 'aktif').length,
+    dikunci:    murid.filter(m => m.status === 'kunci').length,
+    tidakAktif: [...guru, ...murid].filter(x => x.status === 'tidak_aktif').length,
+  }
+
+  async function tambahGuru() {
+    if (!formGuru.nama || !formGuru.no_pekerja || !formGuru.email) {
+      showToast('Sila lengkapkan maklumat wajib!', 'error'); return
+    }
+    const count = guru.length + 1
+    const id_delima = `AIR2024${String(count).padStart(3, '0')}`
+    const { error } = await supabase.from('guru_delima').insert([{
+      ...formGuru, id_delima, status: 'aktif', last_login: '—',
+    }])
+    if (error) { showToast('Ralat: ' + error.message, 'error'); return }
+    setFormGuru({ nama: '', no_pekerja: '', email: '', no_tel: '', subjek: '', gred: 'DG41' })
+    showToast('✅ ID DELIMA guru berjaya didaftarkan!')
+    fetchData()
+    setTab('senarai')
+    setSubTab('guru')
+  }
+
+  async function tambahMurid() {
+    if (!formMurid.nama || !formMurid.no_kad || !formMurid.kelas) {
+      showToast('Sila lengkapkan maklumat wajib!', 'error'); return
+    }
+    const count = murid.length + 1
+    const id_delima = `MR2024${String(count).padStart(3, '0')}`
+    const email = formMurid.email || `${formMurid.no_kad.replace(/-/g, '')}@murid.edu.my`
+    const { error } = await supabase.from('murid_delima').insert([{
+      ...formMurid, id_delima, email, status: 'aktif', last_login: '—',
+    }])
+    if (error) { showToast('Ralat: ' + error.message, 'error'); return }
+    setFormMurid({ nama: '', no_kad: '', email: '', kelas: '', jantina: 'L' })
+    showToast('✅ ID DELIMA murid berjaya didaftarkan!')
+    fetchData()
+    setTab('senarai')
+    setSubTab('murid')
+  }
+
+  async function toggleStatus(jenis, id, status) {
+    const table = jenis === 'guru' ? 'guru_delima' : 'murid_delima'
+    const { error } = await supabase.from(table).update({ status }).eq('id', id)
+    if (error) { showToast('Ralat: ' + error.message, 'error'); return }
+    setModal(null)
+    showToast('✅ Status berjaya dikemaskini!')
+    fetchData()
+  }
+
+  function resetPassword(jenis, id) {
+    const pw = generatePassword()
+    showToast(`🔑 Password reset! Password baru: ${pw}`)
+    setModal(null)
+    setPwForm({ baru: '', sahkan: '', show: false })
+  }
+
+  const filteredGuru = guru.filter(g =>
+    g.nama?.toLowerCase().includes(carian.toLowerCase()) ||
+    g.id_delima?.toLowerCase().includes(carian.toLowerCase()) ||
+    g.no_pekerja?.toLowerCase().includes(carian.toLowerCase())
+  )
+
+  const filteredMurid = murid.filter(m =>
+    m.nama?.toLowerCase().includes(carian.toLowerCase()) ||
+    m.id_delima?.toLowerCase().includes(carian.toLowerCase()) ||
+    m.kelas?.toLowerCase().includes(carian.toLowerCase())
+  )
+
+  const TABS = [
+    { id: 'dashboard', label: '🏠 Utama' },
+    { id: 'daftar',    label: '➕ Daftar' },
+    { id: 'senarai',   label: '👥 Senarai' },
+  ]
+
+  function openModal(jenis, data) {
+    setPwForm({ baru: '', sahkan: '', show: false })
+    setModal({ jenis, data })
+  }
+
+  return (
+    <Layout>
+
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-full text-sm font-semibold text-white shadow-xl transition-all max-w-sm text-center ${
+          toast.type === 'error' ? 'bg-red-500' : 'bg-violet-600'
+        }`}>
+          {toast.msg}
+        </div>
+      )}
+
+      {/* Tab Nav */}
+      <div className="flex gap-1.5 bg-gray-900 rounded-2xl p-1.5 overflow-x-auto scrollbar-hide">
+        {TABS.map(t => (
+          <button key={t.id} onClick={() => { setTab(t.id); setCarian('') }}
+            className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              tab === t.id ? 'bg-violet-600 text-white' : 'text-gray-400 hover:text-white'
+            }`}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── DASHBOARD ── */}
+      {tab === 'dashboard' && (
+        <>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { num: stats.guruAktif,  label: 'Guru Aktif',    icon: '👨‍🏫', color: 'text-violet-400' },
+              { num: stats.muridAktif, label: 'Murid Aktif',   icon: '🎓',  color: 'text-purple-400' },
+              { num: stats.dikunci,    label: 'Akaun Dikunci', icon: '🔒',  color: 'text-red-400' },
+              { num: stats.tidakAktif, label: 'Tidak Aktif',   icon: '⭕',  color: 'text-gray-400' },
+            ].map((s, i) => (
+              <div key={i} className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
+                <div className="text-2xl mb-2">{s.icon}</div>
+                <div className={`text-3xl font-black ${s.color}`}>{s.num}</div>
+                <div className="text-xs text-gray-400 mt-1">{s.label}</div>
+              </div>
+            ))}
+          </div>
+
+          {stats.dikunci > 0 && (
+            <div className="bg-red-950/40 border border-red-800/50 rounded-2xl p-4 flex gap-3 items-start">
+              <span className="text-2xl">🔒</span>
+              <div>
+                <div className="text-sm font-bold text-red-300">{stats.dikunci} Akaun Dikunci</div>
+                <div className="text-xs text-red-400/70 mt-1">Terdapat akaun murid yang perlu dibuka kunci.</div>
+                <button onClick={() => { setTab('senarai'); setSubTab('murid') }}
+                  className="mt-2 text-xs font-bold text-red-400 underline">
+                  Urus sekarang →
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Senarai ID Guru */}
+          <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5">
+            <SectionHeader icon="👨‍🏫" title="ID DELIMA Guru" color="text-violet-400"
+              onMore={() => { setTab('senarai'); setSubTab('guru') }} />
+            <div className="space-y-2.5 mt-4">
+              {guru.slice(0, 4).map(g => (
+                <div key={g.id} onClick={() => openModal('guru', g)}
+                  className="flex items-center gap-3 bg-gray-800/50 rounded-xl p-3 cursor-pointer hover:bg-gray-800">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-bold text-white truncate">{g.nama}</div>
+                    <div className="text-xs font-mono text-gray-500">{g.id_delima} • {g.subjek}</div>
+                  </div>
+                  <StatusBadge status={g.status} map={STATUS_GURU} />
+                </div>
+              ))}
+              {guru.length === 0 && !loading && (
+                <div className="text-center text-xs text-gray-500 py-4">Tiada rekod guru</div>
+              )}
+            </div>
+          </div>
+
+          {/* Senarai ID Murid */}
+          <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5">
+            <SectionHeader icon="🎓" title="ID DELIMA Murid" color="text-purple-400"
+              onMore={() => { setTab('senarai'); setSubTab('murid') }} />
+            <div className="space-y-2.5 mt-4">
+              {murid.slice(0, 4).map(m => (
+                <div key={m.id} onClick={() => openModal('murid', m)}
+                  className="flex items-center gap-3 bg-gray-800/50 rounded-xl p-3 cursor-pointer hover:bg-gray-800">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-bold text-white truncate">{m.nama}</div>
+                    <div className="text-xs font-mono text-gray-500">{m.id_delima} • {m.kelas}</div>
+                  </div>
+                  <StatusBadge status={m.status} map={STATUS_MURID} />
+                </div>
+              ))}
+              {murid.length === 0 && !loading && (
+                <div className="text-center text-xs text-gray-500 py-4">Tiada rekod murid</div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── DAFTAR ── */}
+      {tab === 'daftar' && (
+        <>
+          <div className="flex gap-2 bg-gray-900 border border-gray-800 rounded-2xl p-1.5">
+            {['guru', 'murid'].map(s => (
+              <button key={s} onClick={() => setSubTab(s)}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                  subTab === s ? 'bg-violet-600 text-white' : 'text-gray-400'
+                }`}>
+                {s === 'guru' ? '👨‍🏫 Daftar Guru' : '🎓 Daftar Murid'}
+              </button>
+            ))}
+          </div>
+
+          {subTab === 'guru' ? (
+            <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5 space-y-4">
+              <div className="text-sm font-bold text-violet-400">📝 Daftar ID DELIMA Guru Baru</div>
+              {[
+                { label: 'Nama Penuh *', field: 'nama',       placeholder: 'Nama penuh guru' },
+                { label: 'No. Pekerja *',field: 'no_pekerja', placeholder: 'Contoh: G10239' },
+                { label: 'E-mel *',      field: 'email',      placeholder: 'nama@moe.edu.my' },
+                { label: 'No. Telefon',  field: 'no_tel',     placeholder: '01x-xxxxxxx' },
+                { label: 'Subjek',       field: 'subjek',     placeholder: 'Contoh: Sains' },
+              ].map(f => (
+                <div key={f.field}>
+                  <label className="block text-xs font-semibold text-violet-400 mb-1.5">{f.label}</label>
+                  <input value={formGuru[f.field]} onChange={e => setFormGuru(p => ({ ...p, [f.field]: e.target.value }))}
+                    placeholder={f.placeholder}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500" />
+                </div>
+              ))}
+              <div>
+                <label className="block text-xs font-semibold text-violet-400 mb-1.5">Gred</label>
+                <select value={formGuru.gred} onChange={e => setFormGuru(p => ({ ...p, gred: e.target.value }))}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500">
+                  {GRED_LIST.map(g => <option key={g}>{g}</option>)}
+                </select>
+              </div>
+              <div className="bg-violet-950/40 border border-violet-800/50 rounded-xl p-3 text-xs text-violet-400">
+                ℹ️ ID DELIMA format AIR2024XXX akan dijana automatik.
+              </div>
+              <button onClick={tambahGuru}
+                className="w-full bg-gradient-to-r from-violet-600 to-purple-500 text-white py-3.5 rounded-2xl text-sm font-bold shadow-lg hover:opacity-90 transition-opacity">
+                🔐 Jana ID DELIMA Guru
+              </button>
+            </div>
+          ) : (
+            <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5 space-y-4">
+              <div className="text-sm font-bold text-violet-400">📝 Daftar ID DELIMA Murid Baru</div>
+              {[
+                { label: 'Nama Penuh *',          field: 'nama',   placeholder: 'Nama penuh murid' },
+                { label: 'No. Kad Pengenalan *',   field: 'no_kad', placeholder: 'xxxxxx-xx-xxxx' },
+                { label: 'E-mel (jika ada)',       field: 'email',  placeholder: 'email@murid.edu.my' },
+                { label: 'Kelas *',               field: 'kelas',  placeholder: 'Contoh: 6 Amanah' },
+              ].map(f => (
+                <div key={f.field}>
+                  <label className="block text-xs font-semibold text-violet-400 mb-1.5">{f.label}</label>
+                  <input value={formMurid[f.field]} onChange={e => setFormMurid(p => ({ ...p, [f.field]: e.target.value }))}
+                    placeholder={f.placeholder}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500" />
+                </div>
+              ))}
+              <div>
+                <label className="block text-xs font-semibold text-violet-400 mb-1.5">Jantina</label>
+                <select value={formMurid.jantina} onChange={e => setFormMurid(p => ({ ...p, jantina: e.target.value }))}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500">
+                  <option value="L">Lelaki</option>
+                  <option value="P">Perempuan</option>
+                </select>
+              </div>
+              <div className="bg-violet-950/40 border border-violet-800/50 rounded-xl p-3 text-xs text-violet-400">
+                ℹ️ ID DELIMA format MR2024XXX. Default password: No. Kad (tanpa '-').
+              </div>
+              <button onClick={tambahMurid}
+                className="w-full bg-gradient-to-r from-violet-600 to-purple-500 text-white py-3.5 rounded-2xl text-sm font-bold shadow-lg hover:opacity-90 transition-opacity">
+                🔐 Jana ID DELIMA Murid
+              </button>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ── SENARAI ── */}
+      {tab === 'senarai' && (
+        <>
+          <div className="flex gap-2 bg-gray-900 border border-gray-800 rounded-2xl p-1.5">
+            {['guru', 'murid'].map(s => (
+              <button key={s} onClick={() => { setSubTab(s); setCarian('') }}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                  subTab === s ? 'bg-violet-600 text-white' : 'text-gray-400'
+                }`}>
+                {s === 'guru' ? `👨‍🏫 Guru (${guru.length})` : `🎓 Murid (${murid.length})`}
+              </button>
+            ))}
+          </div>
+
+          <div className="relative">
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-sm">🔍</span>
+            <input value={carian} onChange={e => setCarian(e.target.value)}
+              placeholder={subTab === 'guru' ? 'Cari nama, ID, no. pekerja...' : 'Cari nama, ID, kelas...'}
+              className="w-full bg-gray-900 border border-gray-700 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500" />
+          </div>
+
+          <div className="space-y-2.5">
+            {(subTab === 'guru' ? filteredGuru : filteredMurid).map(item => (
+              <div key={item.id}
+                className="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex items-center gap-3 cursor-pointer hover:border-gray-600 transition-colors"
+                onClick={() => openModal(subTab, item)}>
+                <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0 ${
+                  subTab === 'guru' ? 'bg-violet-900/40' :
+                  item.jantina === 'P' ? 'bg-pink-900/40' : 'bg-blue-900/40'
+                }`}>
+                  {subTab === 'guru' ? '👨‍🏫' : item.jantina === 'P' ? '👧' : '👦'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-bold text-white">{item.nama}</div>
+                  <div className="text-xs font-mono text-gray-500 mt-0.5">{item.id_delima}</div>
+                  <div className="text-xs text-gray-500">
+                    {subTab === 'guru' ? `${item.subjek} • ${item.gred} • ${item.no_pekerja}` : `${item.kelas} • ${item.no_kad}`}
+                  </div>
+                </div>
+                <StatusBadge status={item.status} map={subTab === 'guru' ? STATUS_GURU : STATUS_MURID} />
+              </div>
+            ))}
+            {(subTab === 'guru' ? filteredGuru : filteredMurid).length === 0 && (
+              <div className="text-center py-12 text-gray-500">
+                <div className="text-5xl mb-3">📭</div>
+                <div className="text-sm">Tiada rekod ditemui</div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* ── MODAL ── */}
+      {modal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center"
+          onClick={e => e.target === e.currentTarget && setModal(null)}>
+          <div className="bg-gray-900 border border-gray-800 rounded-t-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
+            <div className="w-10 h-1 bg-gray-700 rounded-full mx-auto mb-5" />
+
+            {modal.jenis === 'guru' && (() => {
+              const g = modal.data
+              return (
+                <>
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="w-14 h-14 bg-violet-900/40 rounded-2xl flex items-center justify-center text-3xl">👨‍🏫</div>
+                    <div>
+                      <div className="text-base font-bold text-violet-400">{g.nama}</div>
+                      <div className="font-mono text-xs text-gray-500 mt-0.5">{g.id_delima}</div>
+                    </div>
+                  </div>
+                  {[['No. Pekerja', g.no_pekerja], ['E-mel', g.email], ['No. Tel', g.no_tel || '—'],
+                    ['Subjek', g.subjek], ['Gred', g.gred], ['Login Terakhir', g.last_login]].map(([k, v]) => (
+                    <div key={k} className="flex justify-between py-2 border-b border-gray-800">
+                      <span className="text-xs text-gray-500">{k}</span>
+                      <span className="text-xs font-bold text-white">{v}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between py-2 border-b border-gray-800">
+                    <span className="text-xs text-gray-500">Status</span>
+                    <StatusBadge status={g.status} map={STATUS_GURU} />
+                  </div>
+
+                  {/* Password section */}
+                  <div className="mt-4 bg-gray-800 rounded-2xl p-4">
+                    <div className="text-xs font-bold text-violet-400 mb-3 flex items-center gap-2">🔐 Pengurusan Kata Laluan</div>
+                    <div className="space-y-2.5 mb-3">
+                      <div>
+                        <label className="block text-xs text-gray-400 mb-1">Password Baru</label>
+                        <div className="relative">
+                          <input type={pwForm.show ? 'text' : 'password'} value={pwForm.baru}
+                            onChange={e => setPwForm(f => ({ ...f, baru: e.target.value }))}
+                            placeholder="Masukkan password baru"
+                            className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 pr-10 text-sm text-white focus:outline-none focus:border-violet-500" />
+                          <button onClick={() => setPwForm(f => ({ ...f, show: !f.show }))}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
+                            {pwForm.show ? '🙈' : '👁️'}
+                          </button>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-400 mb-1">Sahkan Password</label>
+                        <input type={pwForm.show ? 'text' : 'password'} value={pwForm.sahkan}
+                          onChange={e => setPwForm(f => ({ ...f, sahkan: e.target.value }))}
+                          placeholder="Ulang password baru"
+                          className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500" />
+                      </div>
+                      {pwForm.baru && pwForm.sahkan && (
+                        <div className={`text-xs font-semibold ${pwForm.baru === pwForm.sahkan ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {pwForm.baru === pwForm.sahkan ? '✅ Password sepadan' : '❌ Password tidak sepadan'}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => {
+                        if (!pwForm.baru || pwForm.baru !== pwForm.sahkan) { showToast('Password tidak sepadan!', 'error'); return }
+                        if (pwForm.baru.length < 8) { showToast('Password minimum 8 aksara!', 'error'); return }
+                        showToast('✅ Password berjaya ditukar!')
+                        setModal(null)
+                        setPwForm({ baru: '', sahkan: '', show: false })
+                      }}
+                        className="flex-1 bg-violet-600 text-white py-2.5 rounded-xl text-xs font-bold hover:bg-violet-700">
+                        💾 Simpan Password
+                      </button>
+                      <button onClick={() => resetPassword('guru', g.id)}
+                        className="px-4 bg-gray-700 text-gray-300 py-2.5 rounded-xl text-xs font-bold hover:bg-gray-600">
+                        🔑 Reset
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <div className="text-xs font-bold text-gray-500 mb-2">Urus Status Akaun</div>
+                    <div className="flex gap-2 flex-wrap">
+                      {g.status !== 'aktif' && (
+                        <button onClick={() => toggleStatus('guru', g.id, 'aktif')}
+                          className="px-4 py-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-bold hover:bg-emerald-500/30">
+                          ✅ Aktifkan
+                        </button>
+                      )}
+                      {g.status !== 'tidak_aktif' && (
+                        <button onClick={() => toggleStatus('guru', g.id, 'tidak_aktif')}
+                          className="px-4 py-2 bg-gray-700 text-gray-300 rounded-xl text-xs font-bold hover:bg-gray-600">
+                          ⭕ Nyahaktif
+                        </button>
+                      )}
+                      {g.status !== 'cuti' && (
+                        <button onClick={() => toggleStatus('guru', g.id, 'cuti')}
+                          className="px-4 py-2 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-xl text-xs font-bold hover:bg-amber-500/30">
+                          🌴 Cuti
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <button onClick={() => setModal(null)}
+                    className="w-full mt-5 border border-gray-700 text-gray-400 py-3 rounded-2xl text-sm font-bold">
+                    Tutup
+                  </button>
+                </>
+              )
+            })()}
+
+            {modal.jenis === 'murid' && (() => {
+              const m = modal.data
+              return (
+                <>
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl ${m.jantina === 'P' ? 'bg-pink-900/40' : 'bg-blue-900/40'}`}>
+                      {m.jantina === 'P' ? '👧' : '👦'}
+                    </div>
+                    <div>
+                      <div className="text-base font-bold text-violet-400">{m.nama}</div>
+                      <div className="font-mono text-xs text-gray-500 mt-0.5">{m.id_delima}</div>
+                    </div>
+                  </div>
+                  {[['No. Kad', m.no_kad], ['E-mel', m.email], ['Kelas', m.kelas],
+                    ['Jantina', m.jantina === 'L' ? 'Lelaki' : 'Perempuan'], ['Login Terakhir', m.last_login]].map(([k, v]) => (
+                    <div key={k} className="flex justify-between py-2 border-b border-gray-800">
+                      <span className="text-xs text-gray-500">{k}</span>
+                      <span className="text-xs font-bold text-white">{v}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between py-2 border-b border-gray-800">
+                    <span className="text-xs text-gray-500">Status</span>
+                    <StatusBadge status={m.status} map={STATUS_MURID} />
+                  </div>
+
+                  <div className="mt-4">
+                    <div className="text-xs font-bold text-gray-500 mb-2">Urus Status Akaun</div>
+                    <div className="flex gap-2 flex-wrap">
+                      {m.status !== 'aktif' && (
+                        <button onClick={() => toggleStatus('murid', m.id, 'aktif')}
+                          className="px-4 py-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-bold">
+                          ✅ Aktifkan
+                        </button>
+                      )}
+                      {m.status !== 'kunci' && (
+                        <button onClick={() => toggleStatus('murid', m.id, 'kunci')}
+                          className="px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl text-xs font-bold">
+                          🔒 Kunci
+                        </button>
+                      )}
+                      {m.status !== 'tukar_sekolah' && (
+                        <button onClick={() => toggleStatus('murid', m.id, 'tukar_sekolah')}
+                          className="px-4 py-2 bg-gray-700 text-gray-300 rounded-xl text-xs font-bold">
+                          🏫 Tukar Sekolah
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <button onClick={() => setModal(null)}
+                    className="w-full mt-5 border border-gray-700 text-gray-400 py-3 rounded-2xl text-sm font-bold">
+                    Tutup
+                  </button>
+                </>
+              )
+            })()}
+          </div>
+        </div>
+      )}
+
+    </Layout>
+  )
+}

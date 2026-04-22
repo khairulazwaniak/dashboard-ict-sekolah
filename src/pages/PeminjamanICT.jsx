@@ -1,0 +1,447 @@
+import { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
+import Layout from '../components/Layout'
+import SectionHeader from '../components/SectionHeader'
+
+const KATEGORI_ICON = {
+  Laptop: '💻', Projektor: '📽️', Tablet: '📱',
+  Kamera: '📷', Audio: '🎙️', Lain: '📦',
+}
+
+const STATUS_CONFIG = {
+  dipinjam:    { bg: 'bg-blue-100',   text: 'text-blue-700',   label: 'Dipinjam',    dot: 'bg-blue-400' },
+  dipulangkan: { bg: 'bg-emerald-100',text: 'text-emerald-700',label: 'Dipulangkan', dot: 'bg-emerald-400' },
+  lewat:       { bg: 'bg-red-100',    text: 'text-red-700',    label: 'Lewat',       dot: 'bg-red-400' },
+  pending:     { bg: 'bg-amber-100',  text: 'text-amber-700',  label: 'Menunggu',    dot: 'bg-amber-400' },
+}
+
+const TODAY = new Date().toISOString().slice(0, 10)
+
+function getKategoriIcon(nama) {
+  const found = Object.entries(KATEGORI_ICON).find(([k]) =>
+    nama?.toLowerCase().includes(k.toLowerCase())
+  )
+  return found ? found[1] : '📦'
+}
+
+export default function PeminjamanICT() {
+  const [tab, setTab] = useState('dashboard')
+  const [items, setItems] = useState([])
+  const [peminjaman, setPeminjaman] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [filterStatus, setFilterStatus] = useState('semua')
+  const [modal, setModal] = useState(null)
+  const [toast, setToast] = useState(null)
+
+  const [form, setForm] = useState({
+    peminjam: '', jawatan: '', barang: '', kod: '',
+    kuantiti: 1, tarikh_pinjam: TODAY, tarikh_pulang: '', catatan: '',
+  })
+
+  const showToast = (msg, type = 'success') => {
+    setToast({ msg, type })
+    setTimeout(() => setToast(null), 2500)
+  }
+
+  async function fetchData() {
+    setLoading(true)
+    const [{ data: b }, { data: p }] = await Promise.all([
+      supabase.from('barang_ict').select('*'),
+      supabase.from('peminjaman_ict').select('*').order('created_at', { ascending: false }),
+    ])
+    setItems(b ?? [])
+    setPeminjaman(p ?? [])
+    setLoading(false)
+  }
+
+  useEffect(() => { fetchData() }, [])
+
+  const stats = {
+    totalBarang: items.length,
+    sedangDipinjam: peminjaman.filter(p => p.status === 'dipinjam').length,
+    lewat: peminjaman.filter(p => p.status === 'lewat').length,
+    dipulangkan: peminjaman.filter(p => p.status === 'dipulangkan').length,
+  }
+
+  function handleFormChange(e) {
+    const { name, value } = e.target
+    if (name === 'barang') {
+      const item = items.find(i => i.nama === value)
+      setForm(f => ({ ...f, barang: value, kod: item?.kod ?? '' }))
+    } else {
+      setForm(f => ({ ...f, [name]: value }))
+    }
+  }
+
+  async function submitPeminjaman() {
+    if (!form.peminjam || !form.barang || !form.tarikh_pinjam || !form.tarikh_pulang) {
+      showToast('Sila lengkapkan semua maklumat!', 'error'); return
+    }
+    const item = items.find(i => i.nama === form.barang)
+    if (!item || item.tersedia < parseInt(form.kuantiti)) {
+      showToast('Stok tidak mencukupi!', 'error'); return
+    }
+
+    const { error: e1 } = await supabase.from('peminjaman_ict').insert([{
+      ...form, kuantiti: parseInt(form.kuantiti), status: 'dipinjam',
+    }])
+    if (e1) { showToast('Ralat: ' + e1.message, 'error'); return }
+
+    const { error: e2 } = await supabase.from('barang_ict')
+      .update({ tersedia: item.tersedia - parseInt(form.kuantiti) })
+      .eq('id', item.id)
+    if (e2) { showToast('Ralat kemaskini stok: ' + e2.message, 'error'); return }
+
+    setForm({ peminjam: '', jawatan: '', barang: '', kod: '', kuantiti: 1, tarikh_pinjam: TODAY, tarikh_pulang: '', catatan: '' })
+    showToast('✅ Rekod peminjaman berjaya disimpan!')
+    fetchData()
+    setTab('senarai')
+  }
+
+  async function pulangBarang(rec) {
+    const item = items.find(i => i.nama === rec.barang)
+    await supabase.from('peminjaman_ict').update({ status: 'dipulangkan' }).eq('id', rec.id)
+    if (item) {
+      await supabase.from('barang_ict')
+        .update({ tersedia: item.tersedia + rec.kuantiti })
+        .eq('id', item.id)
+    }
+    setModal(null)
+    showToast('✅ Barang berjaya dipulangkan!')
+    fetchData()
+  }
+
+  const filteredPeminjaman = filterStatus === 'semua'
+    ? peminjaman
+    : peminjaman.filter(p => p.status === filterStatus)
+
+  const TABS = [
+    { id: 'dashboard', label: '🏠 Utama' },
+    { id: 'pinjam',    label: '➕ Pinjam' },
+    { id: 'senarai',   label: '📋 Senarai' },
+    { id: 'inventori', label: '📦 Inventori' },
+  ]
+
+  return (
+    <Layout badgeCounts={{ ict: stats.lewat }}>
+
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-full text-sm font-semibold text-white shadow-lg ${
+          toast.type === 'error' ? 'bg-red-500' : 'bg-emerald-600'
+        }`}>
+          {toast.msg}
+        </div>
+      )}
+
+      {/* Tab Nav */}
+      <div className="flex gap-1.5 bg-gray-900 rounded-2xl p-1.5 overflow-x-auto scrollbar-hide">
+        {TABS.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              tab === t.id ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white'
+            }`}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── DASHBOARD ── */}
+      {tab === 'dashboard' && (
+        <>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { num: stats.totalBarang,    label: 'Jenis Barang',   color: 'text-indigo-400' },
+              { num: stats.sedangDipinjam, label: 'Sedang Dipinjam',color: 'text-blue-400' },
+              { num: stats.lewat,          label: 'Lewat Pulang',   color: 'text-red-400' },
+              { num: stats.dipulangkan,    label: 'Dipulangkan',    color: 'text-emerald-400' },
+            ].map((s, i) => (
+              <div key={i} className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
+                <div className={`text-3xl font-black ${s.color}`}>{s.num}</div>
+                <div className="text-xs text-gray-400 mt-1">{s.label}</div>
+              </div>
+            ))}
+          </div>
+
+          {stats.lewat > 0 && (
+            <div className="bg-red-950/40 border border-red-800/50 rounded-2xl p-4 flex gap-3 items-start">
+              <span className="text-2xl">🚨</span>
+              <div>
+                <div className="text-sm font-bold text-red-300">{stats.lewat} Peminjaman Lewat!</div>
+                <div className="text-xs text-red-400/70 mt-1">Sila hubungi peminjam untuk pulangkan barang segera.</div>
+              </div>
+            </div>
+          )}
+
+          {/* Inventori ringkas */}
+          <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5">
+            <SectionHeader icon="📦" title="Status Inventori" color="text-indigo-400" />
+            <div className="space-y-3 mt-4">
+              {items.map(item => (
+                <div key={item.id} className="flex items-center gap-3">
+                  <div className="w-9 h-9 bg-gray-800 rounded-xl flex items-center justify-center text-lg flex-shrink-0">
+                    {getKategoriIcon(item.nama)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-bold text-white truncate">{item.nama}</div>
+                    <div className="w-full bg-gray-800 rounded-full h-1.5 mt-1.5">
+                      <div className={`h-1.5 rounded-full ${
+                        item.tersedia === 0 ? 'bg-red-400' : item.tersedia < item.kuantiti / 2 ? 'bg-amber-400' : 'bg-emerald-400'
+                      }`}
+                        style={{ width: `${(item.tersedia / item.kuantiti) * 100}%` }} />
+                    </div>
+                  </div>
+                  <div className="text-xs font-bold text-gray-400 flex-shrink-0">
+                    {item.tersedia}/{item.kuantiti}
+                  </div>
+                </div>
+              ))}
+              {items.length === 0 && !loading && (
+                <div className="text-center text-xs text-gray-500 py-4">Tiada barang dalam inventori</div>
+              )}
+            </div>
+          </div>
+
+          {/* Terkini */}
+          <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5">
+            <SectionHeader icon="📋" title="Peminjaman Terkini" color="text-indigo-400"
+              onMore={() => setTab('senarai')} />
+            <div className="space-y-2.5 mt-4">
+              {peminjaman.slice(0, 4).map(p => {
+                const s = STATUS_CONFIG[p.status] ?? STATUS_CONFIG.dipinjam
+                return (
+                  <div key={p.id} className="flex items-center gap-3 bg-gray-800/50 rounded-xl p-3 cursor-pointer hover:bg-gray-800"
+                    onClick={() => setModal({ type: 'detail', data: p })}>
+                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${s.dot}`} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-semibold text-white truncate">{p.peminjam}</div>
+                      <div className="text-xs text-gray-500 truncate">{p.barang} • Pulang: {p.tarikh_pulang}</div>
+                    </div>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${s.bg} ${s.text}`}>{s.label}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── FORM PINJAM ── */}
+      {tab === 'pinjam' && (
+        <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5 space-y-4">
+          <div className="text-sm font-bold text-indigo-400 flex items-center gap-2">
+            <span>📝</span> Borang Peminjaman Baru
+          </div>
+
+          {[
+            { label: 'Nama Peminjam *', name: 'peminjam', placeholder: 'Nama penuh' },
+            { label: 'Jawatan',         name: 'jawatan',  placeholder: 'Contoh: Guru Sains' },
+          ].map(f => (
+            <div key={f.name}>
+              <label className="block text-xs font-semibold text-indigo-400 mb-1.5">{f.label}</label>
+              <input name={f.name} value={form[f.name]} onChange={handleFormChange}
+                placeholder={f.placeholder}
+                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500" />
+            </div>
+          ))}
+
+          <div>
+            <label className="block text-xs font-semibold text-indigo-400 mb-1.5">Pilih Barang *</label>
+            <select name="barang" value={form.barang} onChange={handleFormChange}
+              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+              <option value="">-- Pilih Barang --</option>
+              {items.filter(i => i.tersedia > 0).map(i => (
+                <option key={i.id} value={i.nama}>{i.nama} (Tersedia: {i.tersedia})</option>
+              ))}
+            </select>
+          </div>
+
+          {form.kod && (
+            <div className="bg-indigo-950/40 border border-indigo-800/50 rounded-xl px-4 py-2.5 text-xs text-indigo-400 font-semibold">
+              Kod Aset: {form.kod}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-semibold text-indigo-400 mb-1.5">Kuantiti</label>
+            <input name="kuantiti" type="number" min="1" value={form.kuantiti} onChange={handleFormChange}
+              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-indigo-400 mb-1.5">Tarikh Pinjam</label>
+              <input name="tarikh_pinjam" type="date" value={form.tarikh_pinjam} onChange={handleFormChange}
+                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-indigo-400 mb-1.5">Tarikh Pulang *</label>
+              <input name="tarikh_pulang" type="date" value={form.tarikh_pulang} onChange={handleFormChange}
+                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-indigo-400 mb-1.5">Catatan</label>
+            <textarea name="catatan" value={form.catatan} onChange={handleFormChange}
+              placeholder="Tujuan peminjaman..."
+              rows={3}
+              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 resize-none" />
+          </div>
+
+          <button onClick={submitPeminjaman}
+            className="w-full bg-gradient-to-r from-indigo-600 to-violet-500 text-white py-3.5 rounded-2xl text-sm font-bold shadow-lg hover:opacity-90 transition-opacity">
+            💾 Simpan Rekod Peminjaman
+          </button>
+        </div>
+      )}
+
+      {/* ── SENARAI ── */}
+      {tab === 'senarai' && (
+        <>
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+            {['semua', 'dipinjam', 'lewat', 'dipulangkan'].map(s => (
+              <button key={s} onClick={() => setFilterStatus(s)}
+                className={`px-4 py-1.5 rounded-full text-xs font-bold border whitespace-nowrap transition-all ${
+                  filterStatus === s
+                    ? 'bg-indigo-600 text-white border-indigo-600'
+                    : 'bg-gray-900 text-gray-400 border-gray-700 hover:border-gray-500'
+                }`}>
+                {s === 'semua' ? 'Semua' : STATUS_CONFIG[s]?.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="space-y-3">
+            {filteredPeminjaman.map(p => {
+              const s = STATUS_CONFIG[p.status] ?? STATUS_CONFIG.dipinjam
+              return (
+                <div key={p.id}
+                  className="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex items-start gap-3 cursor-pointer hover:border-gray-600 transition-colors"
+                  onClick={() => setModal({ type: 'detail', data: p })}>
+                  <div className="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center text-xl flex-shrink-0">
+                    {getKategoriIcon(p.barang)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-bold text-white">{p.peminjam}</div>
+                    <div className="text-xs text-gray-400 mt-0.5 truncate">{p.barang} • {p.kuantiti} unit</div>
+                    <div className="text-xs text-gray-500">📅 {p.tarikh_pinjam} → {p.tarikh_pulang}</div>
+                  </div>
+                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${s.bg} ${s.text}`}>{s.label}</span>
+                </div>
+              )
+            })}
+            {filteredPeminjaman.length === 0 && (
+              <div className="text-center py-12 text-gray-500">
+                <div className="text-5xl mb-3">📭</div>
+                <div className="text-sm">Tiada rekod ditemui</div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* ── INVENTORI ── */}
+      {tab === 'inventori' && (
+        <div className="space-y-3">
+          {items.map(item => (
+            <div key={item.id}
+              className="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex items-center gap-4 cursor-pointer hover:border-gray-600 transition-colors"
+              onClick={() => setModal({ type: 'item', data: item })}>
+              <div className="w-12 h-12 bg-gray-800 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
+                {getKategoriIcon(item.nama)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-bold text-white">{item.nama}</div>
+                <div className="text-xs text-gray-500 mt-0.5">{item.kod} • {item.kategori}</div>
+                <div className="flex items-center gap-2 mt-2">
+                  <div className="flex-1 bg-gray-800 rounded-full h-2">
+                    <div className={`h-2 rounded-full ${
+                      item.tersedia === 0 ? 'bg-red-400' : item.tersedia < item.kuantiti / 2 ? 'bg-amber-400' : 'bg-emerald-400'
+                    }`}
+                      style={{ width: `${(item.tersedia / item.kuantiti) * 100}%` }} />
+                  </div>
+                  <span className="text-xs font-bold text-gray-400">{item.tersedia}/{item.kuantiti}</span>
+                </div>
+              </div>
+              <div className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                item.tersedia === 0 ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'
+              }`}>
+                {item.tersedia === 0 ? 'Habis' : 'Ada'}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── MODAL ── */}
+      {modal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center"
+          onClick={e => e.target === e.currentTarget && setModal(null)}>
+          <div className="bg-gray-900 border border-gray-800 rounded-t-3xl w-full max-w-lg max-h-[85vh] overflow-y-auto p-6">
+            <div className="w-10 h-1 bg-gray-700 rounded-full mx-auto mb-5" />
+
+            {modal.type === 'detail' && (() => {
+              const p = modal.data
+              const live = peminjaman.find(x => x.id === p.id)
+              const s = STATUS_CONFIG[live?.status] ?? STATUS_CONFIG.dipinjam
+              return (
+                <>
+                  <div className="text-base font-bold text-indigo-400 mb-4">Detail Peminjaman</div>
+                  <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${s.bg} ${s.text} mb-4`}>{s.label}</div>
+                  {[
+                    ['Peminjam', p.peminjam], ['Jawatan', p.jawatan], ['Barang', p.barang],
+                    ['Kod Aset', p.kod], ['Kuantiti', p.kuantiti + ' unit'],
+                    ['Tarikh Pinjam', p.tarikh_pinjam], ['Tarikh Pulang', p.tarikh_pulang],
+                  ].map(([k, v]) => (
+                    <div key={k} className="flex justify-between py-2 border-b border-gray-800">
+                      <span className="text-xs text-gray-500">{k}</span>
+                      <span className="text-xs font-bold text-white">{v}</span>
+                    </div>
+                  ))}
+                  {p.catatan && <div className="mt-3 text-xs bg-gray-800 rounded-xl p-3 text-gray-300">{p.catatan}</div>}
+                  {(live?.status === 'dipinjam' || live?.status === 'lewat') && (
+                    <button onClick={() => pulangBarang(live)}
+                      className="w-full mt-4 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 py-3 rounded-2xl text-sm font-bold hover:bg-emerald-500/30">
+                      ✅ Tandakan Dipulangkan
+                    </button>
+                  )}
+                  <button onClick={() => setModal(null)} className="w-full mt-2 border border-gray-700 text-gray-400 py-3 rounded-2xl text-sm font-bold">Tutup</button>
+                </>
+              )
+            })()}
+
+            {modal.type === 'item' && (() => {
+              const item = modal.data
+              const rekodBarang = peminjaman.filter(p => p.barang === item.nama && p.status !== 'dipulangkan')
+              return (
+                <>
+                  <div className="text-base font-bold text-indigo-400 mb-1">{item.nama}</div>
+                  <div className="text-xs text-gray-500 mb-4">{item.kod}</div>
+                  {[['Kategori', item.kategori], ['Jumlah', item.kuantiti + ' unit'], ['Tersedia', item.tersedia + ' unit']].map(([k, v]) => (
+                    <div key={k} className="flex justify-between py-2 border-b border-gray-800">
+                      <span className="text-xs text-gray-500">{k}</span>
+                      <span className="text-xs font-bold text-white">{v}</span>
+                    </div>
+                  ))}
+                  {rekodBarang.length > 0 && (
+                    <div className="mt-4">
+                      <div className="text-xs font-bold text-gray-400 mb-2">Sedang Dipinjam Oleh:</div>
+                      {rekodBarang.map(r => (
+                        <div key={r.id} className="bg-gray-800 rounded-xl px-3 py-2 text-xs mb-2 text-gray-300">
+                          <span className="font-bold text-white">{r.peminjam}</span> — {r.kuantiti} unit • Pulang: {r.tarikh_pulang}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <button onClick={() => setModal(null)} className="w-full mt-4 border border-gray-700 text-gray-400 py-3 rounded-2xl text-sm font-bold">Tutup</button>
+                </>
+              )
+            })()}
+          </div>
+        </div>
+      )}
+
+    </Layout>
+  )
+}

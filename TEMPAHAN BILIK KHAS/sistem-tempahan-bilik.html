@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistem Tempahan Bilik Khas</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+  :root {
+    --primary: #1a5276;
+    --primary-light: #2e86c1;
+    --accent: #f39c12;
+    --accent2: #27ae60;
+    --danger: #e74c3c;
+    --bg: #eaf2fb;
+    --card: #ffffff;
+    --text: #1c2833;
+    --muted: #7f8c8d;
+    --border: #d5e8f5;
+    --shadow: 0 4px 24px rgba(26,82,118,0.10);
+    --radius: 16px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    color: #fff;
+    padding: 20px 16px 60px;
+    position: relative;
+    overflow: hidden;
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -30px; left: 0; right: 0;
+    height: 60px;
+    background: var(--bg);
+    border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  }
+  .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-icon {
+    width: 40px; height: 40px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .logo-text { font-size: 13px; font-weight: 700; letter-spacing: 0.5px; }
+  .logo-sub { font-size: 11px; opacity: 0.7; font-weight: 400; }
+  .user-btn {
+    background: rgba(255,255,255,0.2);
+    border: none; color: #fff;
+    padding: 8px 14px; border-radius: 50px;
+    font-size: 12px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; gap: 6px;
+    font-family: inherit;
+  }
+  .header-title { font-size: 22px; font-weight: 800; line-height: 1.2; }
+  .header-title span { color: var(--accent); }
+  .header-sub { font-size: 13px; opacity: 0.8; margin-top: 4px; }
+
+  /* NAV TABS */
+  .nav-wrap {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--bg);
+    padding: 16px 16px 0;
+  }
+  .nav-tabs {
+    display: flex; gap: 8px;
+    background: #fff;
+    border-radius: 14px;
+    padding: 6px;
+    box-shadow: var(--shadow);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .nav-tabs::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    flex: 1; min-width: 80px;
+    padding: 9px 8px;
+    border: none; background: transparent;
+    border-radius: 10px;
+    font-size: 12px; font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    font-family: inherit;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+  }
+  .tab-btn.active {
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(26,82,118,0.25);
+  }
+
+  /* MAIN */
+  main { padding: 16px; max-width: 540px; margin: 0 auto; }
+
+  /* SECTION */
+  .section { display: none; animation: fadeIn 0.3s ease; }
+  .section.active { display: block; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+
+  /* CARDS */
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px;
+    margin-bottom: 14px;
+  }
+  .card-title {
+    font-size: 14px; font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-title .icon {
+    width: 28px; height: 28px;
+    background: var(--bg);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+  }
+
+  /* STATS ROW */
+  .stats-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 14px; }
+  .stat-box {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 14px 10px;
+    text-align: center;
+    box-shadow: var(--shadow);
+  }
+  .stat-num { font-size: 24px; font-weight: 800; color: var(--primary); }
+  .stat-label { font-size: 11px; color: var(--muted); font-weight: 500; margin-top: 2px; }
+  .stat-box.accent .stat-num { color: var(--accent); }
+  .stat-box.green .stat-num { color: var(--accent2); }
+
+  /* ROOM GRID */
+  .room-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .room-card {
+    border-radius: 14px;
+    padding: 14px 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+    border: 2px solid transparent;
+  }
+  .room-card:active { transform: scale(0.97); }
+  .room-card.available { background: #eafaf1; border-color: #a9dfbf; }
+  .room-card.booked   { background: #fdf2f8; border-color: #f1948a; }
+  .room-card.pending  { background: #fef9e7; border-color: #f9e79f; }
+  .room-icon { font-size: 26px; margin-bottom: 6px; }
+  .room-name { font-size: 13px; font-weight: 700; color: var(--text); }
+  .room-cap  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .room-badge {
+    position: absolute; top: 10px; right: 10px;
+    font-size: 10px; font-weight: 700; padding: 3px 8px;
+    border-radius: 50px;
+  }
+  .room-card.available .room-badge { background: #a9dfbf; color: #1e8449; }
+  .room-card.booked   .room-badge { background: #f1948a; color: #c0392b; }
+  .room-card.pending  .room-badge { background: #f9e79f; color: #d68910; }
+
+  /* FORM */
+  .form-group { margin-bottom: 14px; }
+  label { display: block; font-size: 12px; font-weight: 600; color: var(--primary); margin-bottom: 5px; }
+  input, select, textarea {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text);
+    background: #f8fbff;
+    outline: none;
+    transition: border 0.2s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--primary-light); background: #fff; }
+  textarea { resize: vertical; min-height: 70px; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .btn {
+    width: 100%; padding: 13px;
+    border: none; border-radius: 12px;
+    font-size: 14px; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+    transition: all 0.2s;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(26,82,118,0.3);
+  }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-accent { background: var(--accent); color: #fff; }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-outline {
+    background: transparent;
+    border: 1.5px solid var(--border);
+    color: var(--muted);
+  }
+
+  /* LIST */
+  .booking-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 14px;
+    border-radius: 14px;
+    background: #f8fbff;
+    margin-bottom: 10px;
+    border: 1.5px solid var(--border);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .booking-item:active { background: #eaf2fb; }
+  .booking-avatar {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+    background: var(--bg);
+  }
+  .booking-info { flex: 1; min-width: 0; }
+  .booking-name { font-size: 13px; font-weight: 700; }
+  .booking-detail { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .booking-status {
+    font-size: 10px; font-weight: 700;
+    padding: 3px 9px; border-radius: 50px;
+    align-self: flex-start; flex-shrink: 0;
+  }
+  .status-approved { background: #a9dfbf; color: #1e8449; }
+  .status-pending  { background: #f9e79f; color: #d68910; }
+  .status-rejected { background: #f1948a; color: #c0392b; }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 999;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #fff;
+    border-radius: 24px 24px 0 0;
+    padding: 24px 20px 32px;
+    width: 100%; max-width: 540px;
+    max-height: 88vh;
+    overflow-y: auto;
+    animation: slideUp 0.3s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(40px); opacity:0; } to { transform:none; opacity:1; } }
+  .modal-handle {
+    width: 40px; height: 4px;
+    background: #ddd; border-radius: 4px;
+    margin: 0 auto 20px;
+  }
+  .modal-title { font-size: 17px; font-weight: 800; color: var(--primary); margin-bottom: 18px; }
+
+  /* CALENDAR */
+  .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .cal-nav { background: var(--bg); border: none; border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 16px; }
+  .cal-month { font-size: 14px; font-weight: 700; color: var(--primary); }
+  .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; }
+  .cal-day-label { text-align: center; font-size: 10px; font-weight: 700; color: var(--muted); padding: 4px 0; }
+  .cal-day {
+    text-align: center; padding: 8px 4px;
+    border-radius: 8px; font-size: 12px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s;
+    position: relative;
+  }
+  .cal-day:hover { background: var(--bg); }
+  .cal-day.today { background: var(--primary); color: #fff; font-weight: 700; }
+  .cal-day.has-booking::after {
+    content: '';
+    position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%);
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--accent);
+  }
+  .cal-day.empty { cursor: default; }
+
+  /* TOAST */
+  .toast {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-80px);
+    background: var(--primary); color: #fff;
+    padding: 12px 20px; border-radius: 50px;
+    font-size: 13px; font-weight: 600;
+    z-index: 9999; transition: transform 0.3s ease;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.2);
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { background: var(--accent2); }
+  .toast.error { background: var(--danger); }
+
+  /* FILTER CHIPS */
+  .chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 4px; margin-bottom: 14px; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    padding: 6px 14px; border-radius: 50px;
+    font-size: 12px; font-weight: 600;
+    border: 1.5px solid var(--border);
+    background: #fff; color: var(--muted);
+    cursor: pointer; white-space: nowrap;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .chip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+  /* EMPTY STATE */
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
+  .empty-state .emoji { font-size: 48px; margin-bottom: 12px; }
+  .empty-state p { font-size: 13px; }
+
+  /* APPROVE/REJECT ACTIONS */
+  .action-row { display: flex; gap: 10px; margin-top: 14px; }
+  .action-row .btn { flex: 1; padding: 11px; font-size: 13px; }
+
+  .divider { height: 1px; background: var(--border); margin: 14px 0; }
+  .info-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; }
+  .info-label { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .info-value { font-size: 12px; font-weight: 700; color: var(--text); }
+
+  .section-header {
+    font-size: 16px; font-weight: 800;
+    color: var(--primary); margin-bottom: 14px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .see-all { font-size: 12px; color: var(--primary-light); font-weight: 600; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div class="logo">
+      <div class="logo-icon">🏫</div>
+      <div>
+        <div class="logo-text">SISTEM TEMPAHAN</div>
+        <div class="logo-sub">Bilik Khas Sekolah</div>
+      </div>
+    </div>
+    <button class="user-btn" onclick="showToast('Profil Cikgu', 'success')">👤 Cikgu</button>
+  </div>
+  <div class="header-title">Tempahan <span>Bilik Khas</span></div>
+  <div class="header-sub">Makmal & Bilik STEM • Tahun 2025</div>
+</header>
+
+<div class="nav-wrap">
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('dashboard')">🏠 Utama</button>
+    <button class="tab-btn" onclick="switchTab('tempah')">➕ Tempah</button>
+    <button class="tab-btn" onclick="switchTab('senarai')">📋 Senarai</button>
+    <button class="tab-btn" onclick="switchTab('kalendar')">📅 Kalendar</button>
+    <button class="tab-btn" onclick="switchTab('admin')">⚙️ Admin</button>
+  </div>
+</div>
+
+<main>
+
+<!-- DASHBOARD -->
+<div id="sec-dashboard" class="section active">
+  <div class="stats-row" style="margin-top:16px">
+    <div class="stat-box">
+      <div class="stat-num" id="stat-total">8</div>
+      <div class="stat-label">Jumlah Bilik</div>
+    </div>
+    <div class="stat-box accent">
+      <div class="stat-num" id="stat-pending">3</div>
+      <div class="stat-label">Menunggu</div>
+    </div>
+    <div class="stat-box green">
+      <div class="stat-num" id="stat-today">2</div>
+      <div class="stat-label">Hari Ini</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><div class="icon">🏠</div> Status Bilik Khas</div>
+    <div class="room-grid" id="room-grid"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-header">
+      Tempahan Terkini
+      <span class="see-all" onclick="switchTab('senarai')">Lihat semua →</span>
+    </div>
+    <div id="recent-bookings"></div>
+  </div>
+</div>
+
+<!-- TEMPAH -->
+<div id="sec-tempah" class="section">
+  <div class="card" style="margin-top:16px">
+    <div class="card-title"><div class="icon">📝</div> Borang Tempahan Baru</div>
+
+    <div class="form-group">
+      <label>Nama Guru</label>
+      <input type="text" id="f-guru" placeholder="Contoh: Cikgu Ahmad bin Ali">
+    </div>
+    <div class="form-group">
+      <label>Mata Pelajaran / Aktiviti</label>
+      <input type="text" id="f-matpel" placeholder="Contoh: Sains Tahun 5">
+    </div>
+    <div class="form-group">
+      <label>Pilih Bilik</label>
+      <select id="f-bilik">
+        <option value="">-- Pilih Bilik --</option>
+        <option>Makmal Sains 1</option>
+        <option>Makmal Sains 2</option>
+        <option>Makmal Komputer 1</option>
+        <option>Makmal Komputer 2</option>
+        <option>Bilik STEM</option>
+        <option>Bilik Sumber</option>
+        <option>Bilik Muzik</option>
+        <option>Bilik Seni</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Tarikh</label>
+        <input type="date" id="f-tarikh">
+      </div>
+      <div class="form-group">
+        <label>Kelas</label>
+        <input type="text" id="f-kelas" placeholder="Contoh: 5 Amanah">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Masa Mula</label>
+        <input type="time" id="f-mula">
+      </div>
+      <div class="form-group">
+        <label>Masa Tamat</label>
+        <input type="time" id="f-tamat">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Bilangan Murid</label>
+      <input type="number" id="f-murid" placeholder="Contoh: 35" min="1">
+    </div>
+    <div class="form-group">
+      <label>Tujuan / Catatan</label>
+      <textarea id="f-catatan" placeholder="Nyatakan tujuan penggunaan bilik..."></textarea>
+    </div>
+
+    <button class="btn btn-primary" onclick="submitTempahan()">🗓️ Hantar Permohonan</button>
+  </div>
+</div>
+
+<!-- SENARAI -->
+<div id="sec-senarai" class="section">
+  <div style="margin-top:16px">
+    <div class="chips">
+      <button class="chip active" onclick="filterBookings('semua',this)">Semua</button>
+      <button class="chip" onclick="filterBookings('pending',this)">Menunggu</button>
+      <button class="chip" onclick="filterBookings('approved',this)">Diluluskan</button>
+      <button class="chip" onclick="filterBookings('rejected',this)">Ditolak</button>
+    </div>
+    <div id="booking-list"></div>
+  </div>
+</div>
+
+<!-- KALENDAR -->
+<div id="sec-kalendar" class="section">
+  <div class="card" style="margin-top:16px">
+    <div class="card-title"><div class="icon">📅</div> Kalendar Tempahan</div>
+    <div class="cal-header">
+      <button class="cal-nav" onclick="changeMonth(-1)">‹</button>
+      <div class="cal-month" id="cal-month-label"></div>
+      <button class="cal-nav" onclick="changeMonth(1)">›</button>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+  </div>
+  <div class="card">
+    <div class="card-title"><div class="icon">🗓️</div> <span id="cal-selected-label">Pilih tarikh untuk lihat tempahan</span></div>
+    <div id="cal-day-bookings"></div>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div id="sec-admin" class="section">
+  <div style="margin-top:16px">
+    <div class="section-header">Kelulusan Permohonan</div>
+    <div id="admin-pending-list"></div>
+
+    <div class="divider"></div>
+    <div class="section-header">Urus Bilik</div>
+    <div class="card">
+      <div class="form-group">
+        <label>Tambah Bilik Baru</label>
+        <input type="text" id="new-room-name" placeholder="Nama bilik baru">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Kapasiti</label>
+          <input type="number" id="new-room-cap" placeholder="Bilangan">
+        </div>
+        <div class="form-group">
+          <label>Jenis</label>
+          <select id="new-room-type">
+            <option>Makmal</option>
+            <option>Bilik STEM</option>
+            <option>Bilik Sumber</option>
+            <option>Lain-lain</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-accent" onclick="addRoom()">➕ Tambah Bilik</button>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<!-- MODAL DETAIL -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal-content">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-title">Detail Tempahan</div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============ DATA ============
+let bookings = [
+  { id:1, guru:'Cikgu Aishah Noor', matpel:'Sains Tahun 5', bilik:'Makmal Sains 1', tarikh:'2025-01-20', mula:'08:00', tamat:'09:00', kelas:'5 Amanah', murid:32, catatan:'Eksperimen kimia asid-bes', status:'approved' },
+  { id:2, guru:'Cikgu Hafiz Rahman', matpel:'Teknologi Maklumat', bilik:'Makmal Komputer 1', tarikh:'2025-01-20', mula:'10:00', tamat:'11:00', kelas:'4 Bestari', murid:28, catatan:'Latihan Microsoft Office', status:'approved' },
+  { id:3, guru:'Cikgu Nurul Ain', matpel:'STEM - Projek Jambatan', bilik:'Bilik STEM', tarikh:'2025-01-21', mula:'14:00', tamat:'16:00', kelas:'6 Cemerlang', murid:15, catatan:'Aktiviti membina jambatan kertas', status:'pending' },
+  { id:4, guru:'Cikgu Roslan Daud', matpel:'Fizik Tingkatan 4', bilik:'Makmal Sains 2', tarikh:'2025-01-22', mula:'09:00', tamat:'10:30', kelas:'4F', murid:30, catatan:'Amali hukum Ohm', status:'pending' },
+  { id:5, guru:'Cikgu Fatimah Zain', matpel:'Reka Cipta', bilik:'Bilik Sumber', tarikh:'2025-01-18', mula:'11:00', tamat:'12:00', kelas:'5B', murid:25, catatan:'Mencari bahan rujukan', status:'rejected' },
+  { id:6, guru:'Cikgu Azmi Bakar', matpel:'Matematik Tahun 6', bilik:'Makmal Komputer 2', tarikh:'2025-01-23', mula:'07:30', tamat:'09:00', kelas:'6 Gigih', murid:33, catatan:'Latihan Matematik online', status:'pending' },
+];
+
+let rooms = [
+  { name:'Makmal Sains 1', cap:35, icon:'🧪', type:'Makmal' },
+  { name:'Makmal Sains 2', cap:35, icon:'⚗️', type:'Makmal' },
+  { name:'Makmal Komputer 1', cap:40, icon:'💻', type:'Komputer' },
+  { name:'Makmal Komputer 2', cap:40, icon:'🖥️', type:'Komputer' },
+  { name:'Bilik STEM', cap:20, icon:'🔬', type:'STEM' },
+  { name:'Bilik Sumber', cap:30, icon:'📚', type:'Sumber' },
+  { name:'Bilik Muzik', cap:25, icon:'🎵', type:'Sumber' },
+  { name:'Bilik Seni', cap:30, icon:'🎨', type:'Sumber' },
+];
+
+let calYear = 2025, calMonth = 0;
+let nextId = 7;
+
+// ============ TABS ============
+function switchTab(tab) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('sec-'+tab).classList.add('active');
+  const idx = ['dashboard','tempah','senarai','kalendar','admin'].indexOf(tab);
+  document.querySelectorAll('.tab-btn')[idx].classList.add('active');
+  if(tab==='dashboard') renderDashboard();
+  if(tab==='senarai') renderList('semua');
+  if(tab==='kalendar') renderCalendar();
+  if(tab==='admin') renderAdmin();
+}
+
+// ============ DASHBOARD ============
+function renderDashboard() {
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('stat-pending').textContent = bookings.filter(b=>b.status==='pending').length;
+  document.getElementById('stat-today').textContent = bookings.filter(b=>b.tarikh===today).length;
+
+  // Room grid
+  const grid = document.getElementById('room-grid');
+  grid.innerHTML = '';
+  rooms.forEach(r => {
+    const todayBookings = bookings.filter(b=>b.bilik===r.name && b.tarikh===today && b.status==='approved');
+    const status = todayBookings.length > 0 ? 'booked' : 'available';
+    const badgeText = status==='booked' ? 'Ditempah' : 'Kosong';
+    grid.innerHTML += `
+      <div class="room-card ${status}" onclick="showRoomDetail('${r.name}')">
+        <div class="room-badge">${badgeText}</div>
+        <div class="room-icon">${r.icon}</div>
+        <div class="room-name">${r.name}</div>
+        <div class="room-cap">👥 ${r.cap} orang</div>
+      </div>`;
+  });
+
+  // Recent
+  const recent = document.getElementById('recent-bookings');
+  const last4 = [...bookings].slice(-4).reverse();
+  recent.innerHTML = last4.map(b => bookingItem(b)).join('') || emptyState('Tiada tempahan lagi');
+}
+
+function showRoomDetail(roomName) {
+  const room = rooms.find(r=>r.name===roomName);
+  const rb = bookings.filter(b=>b.bilik===roomName && b.status==='approved').slice(0,5);
+  document.getElementById('modal-title').textContent = room.icon+' '+roomName;
+  document.getElementById('modal-body').innerHTML = `
+    <div class="info-row"><span class="info-label">Kapasiti</span><span class="info-value">${room.cap} orang</span></div>
+    <div class="info-row"><span class="info-label">Jenis</span><span class="info-value">${room.type}</span></div>
+    <div class="divider"></div>
+    <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:10px">Tempahan Akan Datang</div>
+    ${rb.length ? rb.map(b=>`
+      <div style="padding:10px;background:#f8fbff;border-radius:10px;margin-bottom:8px;font-size:12px">
+        <div style="font-weight:700">${b.guru}</div>
+        <div style="color:var(--muted);margin-top:2px">📅 ${b.tarikh} • ⏰ ${b.mula}–${b.tamat}</div>
+      </div>`).join('') : '<div style="color:var(--muted);font-size:12px;text-align:center;padding:16px">Tiada tempahan</div>'}
+    <button class="btn btn-primary" style="margin-top:12px" onclick="closeModal();switchTab('tempah')">📝 Buat Tempahan</button>
+  `;
+  openModal();
+}
+
+// ============ BOOKING FORM ============
+function submitTempahan() {
+  const guru = document.getElementById('f-guru').value.trim();
+  const matpel = document.getElementById('f-matpel').value.trim();
+  const bilik = document.getElementById('f-bilik').value;
+  const tarikh = document.getElementById('f-tarikh').value;
+  const kelas = document.getElementById('f-kelas').value.trim();
+  const mula = document.getElementById('f-mula').value;
+  const tamat = document.getElementById('f-tamat').value;
+  const murid = document.getElementById('f-murid').value;
+  const catatan = document.getElementById('f-catatan').value.trim();
+
+  if(!guru||!matpel||!bilik||!tarikh||!kelas||!mula||!tamat||!murid) {
+    showToast('Sila lengkapkan semua maklumat!', 'error'); return;
+  }
+
+  const conflict = bookings.find(b=>b.bilik===bilik && b.tarikh===tarikh && b.status!=='rejected' &&
+    ((mula>=b.mula && mula<b.tamat)||(tamat>b.mula && tamat<=b.tamat)||(mula<=b.mula && tamat>=b.tamat)));
+  if(conflict) { showToast('Bilik sudah ditempah pada waktu tersebut!', 'error'); return; }
+
+  bookings.push({ id:nextId++, guru, matpel, bilik, tarikh, kelas, mula, tamat, murid:parseInt(murid), catatan, status:'pending' });
+
+  document.getElementById('f-guru').value='';
+  document.getElementById('f-matpel').value='';
+  document.getElementById('f-bilik').value='';
+  document.getElementById('f-tarikh').value='';
+  document.getElementById('f-kelas').value='';
+  document.getElementById('f-mula').value='';
+  document.getElementById('f-tamat').value='';
+  document.getElementById('f-murid').value='';
+  document.getElementById('f-catatan').value='';
+
+  showToast('✅ Permohonan berjaya dihantar!', 'success');
+  setTimeout(()=>switchTab('senarai'),1200);
+}
+
+// ============ LIST ============
+function renderList(filter) {
+  const list = document.getElementById('booking-list');
+  let data = filter==='semua' ? bookings : bookings.filter(b=>b.status===filter);
+  list.innerHTML = data.length ? [...data].reverse().map(b=>bookingItem(b,true)).join('') : emptyState('Tiada rekod tempahan');
+}
+
+function filterBookings(filter, el) {
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderList(filter);
+}
+
+function bookingItem(b, clickable=true) {
+  const icons = {'Makmal Sains 1':'🧪','Makmal Sains 2':'⚗️','Makmal Komputer 1':'💻','Makmal Komputer 2':'🖥️','Bilik STEM':'🔬','Bilik Sumber':'📚','Bilik Muzik':'🎵','Bilik Seni':'🎨'};
+  const icon = icons[b.bilik]||'🏫';
+  const statusClass = {'approved':'status-approved','pending':'status-pending','rejected':'status-rejected'}[b.status];
+  const statusLabel = {'approved':'Diluluskan','pending':'Menunggu','rejected':'Ditolak'}[b.status];
+  return `<div class="booking-item" onclick="${clickable?'showDetail('+b.id+')':''}">
+    <div class="booking-avatar">${icon}</div>
+    <div class="booking-info">
+      <div class="booking-name">${b.guru}</div>
+      <div class="booking-detail">${b.bilik} • ${b.tarikh}</div>
+      <div class="booking-detail">⏰ ${b.mula}–${b.tamat} • 👥 ${b.murid} murid</div>
+    </div>
+    <div class="booking-status ${statusClass}">${statusLabel}</div>
+  </div>`;
+}
+
+function showDetail(id) {
+  const b = bookings.find(x=>x.id===id);
+  if(!b) return;
+  const statusLabel = {'approved':'✅ Diluluskan','pending':'⏳ Menunggu','rejected':'❌ Ditolak'}[b.status];
+  const statusColor = {'approved':'#27ae60','pending':'#d68910','rejected':'#e74c3c'}[b.status];
+  document.getElementById('modal-title').textContent = 'Detail Tempahan #'+b.id;
+  document.getElementById('modal-body').innerHTML = `
+    <div style="text-align:center;margin-bottom:16px">
+      <span style="background:${statusColor}20;color:${statusColor};padding:6px 16px;border-radius:50px;font-size:13px;font-weight:700">${statusLabel}</span>
+    </div>
+    <div class="info-row"><span class="info-label">Nama Guru</span><span class="info-value">${b.guru}</span></div>
+    <div class="info-row"><span class="info-label">Mata Pelajaran</span><span class="info-value">${b.matpel}</span></div>
+    <div class="info-row"><span class="info-label">Bilik</span><span class="info-value">${b.bilik}</span></div>
+    <div class="info-row"><span class="info-label">Kelas</span><span class="info-value">${b.kelas}</span></div>
+    <div class="info-row"><span class="info-label">Tarikh</span><span class="info-value">${b.tarikh}</span></div>
+    <div class="info-row"><span class="info-label">Masa</span><span class="info-value">${b.mula} – ${b.tamat}</span></div>
+    <div class="info-row"><span class="info-label">Bil. Murid</span><span class="info-value">${b.murid} orang</span></div>
+    <div class="divider"></div>
+    <div class="info-label" style="margin-bottom:6px">Catatan:</div>
+    <div style="font-size:13px;color:var(--text);background:#f8fbff;padding:10px;border-radius:10px">${b.catatan||'Tiada catatan'}</div>
+    ${b.status==='pending'?`<div class="action-row">
+      <button class="btn btn-accent" onclick="approveBooking(${b.id})">✅ Lulus</button>
+      <button class="btn btn-danger" onclick="rejectBooking(${b.id})">❌ Tolak</button>
+    </div>`:''}
+    <button class="btn btn-outline" style="margin-top:10px" onclick="closeModal()">Tutup</button>
+  `;
+  openModal();
+}
+
+// ============ CALENDAR ============
+function renderCalendar() {
+  const months = ['Januari','Februari','Mac','April','Mei','Jun','Julai','Ogos','September','Oktober','November','Disember'];
+  document.getElementById('cal-month-label').textContent = months[calMonth]+' '+calYear;
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+  ['Ahd','Sen','Sel','Rab','Kha','Jum','Sab'].forEach(d=>{
+    grid.innerHTML += `<div class="cal-day-label">${d}</div>`;
+  });
+  const firstDay = new Date(calYear,calMonth,1).getDay();
+  const daysInMonth = new Date(calYear,calMonth+1,0).getDate();
+  const todayStr = new Date().toISOString().slice(0,10);
+
+  for(let i=0;i<firstDay;i++) grid.innerHTML += `<div class="cal-day empty"></div>`;
+  for(let d=1;d<=daysInMonth;d++) {
+    const ds = calYear+'-'+(String(calMonth+1).padStart(2,'0'))+'-'+(String(d).padStart(2,'0'));
+    const hasBook = bookings.some(b=>b.tarikh===ds && b.status!=='rejected');
+    const isToday = ds===todayStr;
+    grid.innerHTML += `<div class="cal-day ${isToday?'today':''} ${hasBook?'has-booking':''}" onclick="selectCalDay('${ds}')">${d}</div>`;
+  }
+}
+
+function changeMonth(dir) {
+  calMonth += dir;
+  if(calMonth<0){calMonth=11;calYear--;}
+  if(calMonth>11){calMonth=0;calYear++;}
+  renderCalendar();
+}
+
+function selectCalDay(ds) {
+  const label = document.getElementById('cal-selected-label');
+  const dayBooks = bookings.filter(b=>b.tarikh===ds && b.status!=='rejected');
+  label.textContent = 'Tempahan: '+ds;
+  const container = document.getElementById('cal-day-bookings');
+  container.innerHTML = dayBooks.length ? dayBooks.map(b=>bookingItem(b)).join('') : '<div style="color:var(--muted);font-size:13px;text-align:center;padding:16px">Tiada tempahan pada tarikh ini</div>';
+}
+
+// ============ ADMIN ============
+function renderAdmin() {
+  const pendingList = document.getElementById('admin-pending-list');
+  const pending = bookings.filter(b=>b.status==='pending');
+  pendingList.innerHTML = pending.length ? pending.map(b=>`
+    <div class="card" style="margin-bottom:12px">
+      <div style="font-size:14px;font-weight:700;margin-bottom:8px">${b.guru}</div>
+      <div class="info-row"><span class="info-label">Bilik</span><span class="info-value">${b.bilik}</span></div>
+      <div class="info-row"><span class="info-label">Tarikh & Masa</span><span class="info-value">${b.tarikh} • ${b.mula}–${b.tamat}</span></div>
+      <div class="info-row"><span class="info-label">Kelas</span><span class="info-value">${b.kelas} (${b.murid} murid)</span></div>
+      <div class="action-row">
+        <button class="btn btn-accent" onclick="approveBooking(${b.id})">✅ Lulus</button>
+        <button class="btn btn-danger" onclick="rejectBooking(${b.id})">❌ Tolak</button>
+      </div>
+    </div>`).join('') : '<div class="card"><div style="text-align:center;color:var(--muted);padding:20px;font-size:13px">🎉 Tiada permohonan menunggu kelulusan</div></div>';
+}
+
+function approveBooking(id) {
+  bookings.find(b=>b.id===id).status = 'approved';
+  closeModal(); renderAdmin(); renderDashboard();
+  showToast('✅ Tempahan diluluskan!', 'success');
+}
+
+function rejectBooking(id) {
+  bookings.find(b=>b.id===id).status = 'rejected';
+  closeModal(); renderAdmin(); renderDashboard();
+  showToast('Tempahan ditolak.', 'error');
+}
+
+function addRoom() {
+  const name = document.getElementById('new-room-name').value.trim();
+  const cap = document.getElementById('new-room-cap').value;
+  const type = document.getElementById('new-room-type').value;
+  if(!name||!cap){ showToast('Sila isi nama dan kapasiti!','error'); return; }
+  const icons = {'Makmal':'🧪','Bilik STEM':'🔬','Bilik Sumber':'📚','Lain-lain':'🏫'};
+  rooms.push({ name, cap:parseInt(cap), icon:icons[type]||'🏫', type });
+  document.getElementById('new-room-name').value='';
+  document.getElementById('new-room-cap').value='';
+  showToast('✅ Bilik berjaya ditambah!','success');
+  renderDashboard();
+}
+
+// ============ MODAL ============
+function openModal() { document.getElementById('modal-overlay').classList.add('open'); }
+function closeModal(e) {
+  if(!e || e.target===document.getElementById('modal-overlay'))
+    document.getElementById('modal-overlay').classList.remove('open');
+}
+
+// ============ TOAST ============
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast '+(type||'');
+  requestAnimationFrame(()=>{ t.classList.add('show'); });
+  setTimeout(()=>t.classList.remove('show'), 2600);
+}
+
+function emptyState(msg) {
+  return `<div class="empty-state"><div class="emoji">📭</div><p>${msg}</p></div>`;
+}
+
+// ============ INIT ============
+// Set today's date as default
+document.getElementById('f-tarikh').value = new Date().toISOString().slice(0,10);
+calYear = new Date().getFullYear();
+calMonth = new Date().getMonth();
+renderDashboard();
+</script>
+</body>
+</html>
