@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import Layout from '../components/Layout'
 import SectionHeader from '../components/SectionHeader'
+import AdminGate from '../components/AdminGate'
+import { useAdmin } from '../contexts/AdminContext'
 
 const KATEGORI_ICON = {
   Laptop: '💻', Projektor: '📽️', Tablet: '📱',
@@ -25,6 +27,7 @@ function getKategoriIcon(nama) {
 }
 
 export default function PeminjamanICT() {
+  const { isAdmin } = useAdmin()
   const [tab, setTab] = useState('dashboard')
   const [items, setItems] = useState([])
   const [peminjaman, setPeminjaman] = useState([])
@@ -98,6 +101,25 @@ export default function PeminjamanICT() {
     setTab('senarai')
   }
 
+  async function deletePeminjaman(rec) {
+    const item = items.find(i => i.nama === rec.barang)
+    await supabase.from('peminjaman_ict').delete().eq('id', rec.id)
+    if (item && rec.status !== 'dipulangkan') {
+      await supabase.from('barang_ict')
+        .update({ tersedia: item.tersedia + rec.kuantiti })
+        .eq('id', item.id)
+    }
+    setModal(null)
+    showToast('🗑️ Rekod berjaya dipadam!')
+    fetchData()
+  }
+
+  async function deleteBarang(id) {
+    await supabase.from('barang_ict').delete().eq('id', id)
+    showToast('🗑️ Barang dipadam!')
+    fetchData()
+  }
+
   async function pulangBarang(rec) {
     const item = items.find(i => i.nama === rec.barang)
     await supabase.from('peminjaman_ict').update({ status: 'dipulangkan' }).eq('id', rec.id)
@@ -120,6 +142,7 @@ export default function PeminjamanICT() {
     { id: 'pinjam',    label: '➕ Pinjam' },
     { id: 'senarai',   label: '📋 Senarai' },
     { id: 'inventori', label: '📦 Inventori' },
+    { id: 'admin',     label: '⚙️ Admin' },
   ]
 
   return (
@@ -374,6 +397,55 @@ export default function PeminjamanICT() {
         </div>
       )}
 
+      {/* ── ADMIN ── */}
+      {tab === 'admin' && (
+        <AdminGate>
+          <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5">
+            <SectionHeader icon="📋" title="Semua Peminjaman" color="text-indigo-400" />
+            <div className="space-y-2.5 mt-4">
+              {peminjaman.map(p => {
+                const s = STATUS_CONFIG[p.status] ?? STATUS_CONFIG.dipinjam
+                return (
+                  <div key={p.id} className="flex items-center gap-3 bg-gray-800/50 rounded-xl p-3">
+                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${s.dot}`} />
+                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setModal({ type: 'detail', data: p })}>
+                      <div className="text-xs font-semibold text-white truncate">{p.peminjam}</div>
+                      <div className="text-xs text-gray-500 truncate">{p.barang} • {p.tarikh_pulang}</div>
+                    </div>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${s.bg} ${s.text}`}>{s.label}</span>
+                    <button onClick={() => deletePeminjaman(p)}
+                      className="text-xs text-red-500 hover:text-red-400 px-2 py-1 rounded-lg hover:bg-red-900/30 transition-colors flex-shrink-0">
+                      🗑️
+                    </button>
+                  </div>
+                )
+              })}
+              {peminjaman.length === 0 && <div className="text-center py-8 text-gray-500 text-xs">Tiada rekod</div>}
+            </div>
+          </div>
+
+          <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5">
+            <SectionHeader icon="📦" title="Urus Inventori" color="text-indigo-400" />
+            <div className="space-y-2.5 mt-4">
+              {items.map(item => (
+                <div key={item.id} className="flex items-center gap-3 bg-gray-800/50 rounded-xl p-3">
+                  <div className="text-xl">{getKategoriIcon(item.nama)}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-bold text-white truncate">{item.nama}</div>
+                    <div className="text-xs text-gray-500">{item.kod} • {item.tersedia}/{item.kuantiti} tersedia</div>
+                  </div>
+                  <button onClick={() => deleteBarang(item.id)}
+                    className="text-xs text-red-500 hover:text-red-400 px-2 py-1 rounded-lg hover:bg-red-900/30 transition-colors flex-shrink-0">
+                    🗑️
+                  </button>
+                </div>
+              ))}
+              {items.length === 0 && <div className="text-center py-8 text-gray-500 text-xs">Tiada barang</div>}
+            </div>
+          </div>
+        </AdminGate>
+      )}
+
       {/* ── MODAL ── */}
       {modal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center"
@@ -404,6 +476,12 @@ export default function PeminjamanICT() {
                     <button onClick={() => pulangBarang(live)}
                       className="w-full mt-4 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 py-3 rounded-2xl text-sm font-bold hover:bg-emerald-500/30">
                       ✅ Tandakan Dipulangkan
+                    </button>
+                  )}
+                  {isAdmin && (
+                    <button onClick={() => deletePeminjaman(live ?? p)}
+                      className="w-full mt-2 border border-red-800 text-red-500 py-3 rounded-2xl text-sm font-bold hover:bg-red-900/30 transition-colors">
+                      🗑️ Padam Rekod
                     </button>
                   )}
                   <button onClick={() => setModal(null)} className="w-full mt-2 border border-gray-700 text-gray-400 py-3 rounded-2xl text-sm font-bold">Tutup</button>

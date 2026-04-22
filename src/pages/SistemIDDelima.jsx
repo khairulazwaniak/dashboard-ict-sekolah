@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import Layout from '../components/Layout'
 import SectionHeader from '../components/SectionHeader'
+import AdminGate from '../components/AdminGate'
+import { useAdmin } from '../contexts/AdminContext'
 
 const STATUS_GURU = {
   aktif:       { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Aktif' },
@@ -29,6 +31,7 @@ function StatusBadge({ status, map }) {
 }
 
 export default function SistemIDDelima() {
+  const { isAdmin } = useAdmin()
   const [tab, setTab] = useState('dashboard')
   const [subTab, setSubTab] = useState('guru')
   const [guru, setGuru] = useState([])
@@ -102,6 +105,14 @@ export default function SistemIDDelima() {
     setSubTab('murid')
   }
 
+  async function deleteRecord(jenis, id) {
+    const table = jenis === 'guru' ? 'guru_delima' : 'murid_delima'
+    await supabase.from(table).delete().eq('id', id)
+    setModal(null)
+    showToast('🗑️ Rekod berjaya dipadam!')
+    fetchData()
+  }
+
   async function toggleStatus(jenis, id, status) {
     const table = jenis === 'guru' ? 'guru_delima' : 'murid_delima'
     const { error } = await supabase.from(table).update({ status }).eq('id', id)
@@ -134,6 +145,7 @@ export default function SistemIDDelima() {
     { id: 'dashboard', label: '🏠 Utama' },
     { id: 'daftar',    label: '➕ Daftar' },
     { id: 'senarai',   label: '👥 Senarai' },
+    { id: 'admin',     label: '⚙️ Admin' },
   ]
 
   function openModal(jenis, data) {
@@ -375,6 +387,46 @@ export default function SistemIDDelima() {
         </>
       )}
 
+      {/* ── ADMIN ── */}
+      {tab === 'admin' && (
+        <AdminGate>
+          <div className="flex gap-2 bg-gray-900 border border-gray-800 rounded-2xl p-1.5">
+            {['guru', 'murid'].map(s => (
+              <button key={s} onClick={() => setSubTab(s)}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                  subTab === s ? 'bg-violet-600 text-white' : 'text-gray-400'
+                }`}>
+                {s === 'guru' ? `👨‍🏫 Guru (${guru.length})` : `🎓 Murid (${murid.length})`}
+              </button>
+            ))}
+          </div>
+
+          <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5">
+            <SectionHeader icon={subTab === 'guru' ? '👨‍🏫' : '🎓'}
+              title={subTab === 'guru' ? 'Semua Guru' : 'Semua Murid'}
+              color="text-violet-400" />
+            <div className="space-y-2.5 mt-4">
+              {(subTab === 'guru' ? guru : murid).map(item => (
+                <div key={item.id} className="flex items-center gap-3 bg-gray-800/50 rounded-xl p-3">
+                  <div className="flex-1 min-w-0 cursor-pointer" onClick={() => openModal(subTab, item)}>
+                    <div className="text-xs font-bold text-white truncate">{item.nama}</div>
+                    <div className="text-xs font-mono text-gray-500">{item.id_delima}</div>
+                  </div>
+                  <StatusBadge status={item.status} map={subTab === 'guru' ? STATUS_GURU : STATUS_MURID} />
+                  <button onClick={() => deleteRecord(subTab, item.id)}
+                    className="text-xs text-red-500 hover:text-red-400 px-2 py-1 rounded-lg hover:bg-red-900/30 transition-colors flex-shrink-0">
+                    🗑️
+                  </button>
+                </div>
+              ))}
+              {(subTab === 'guru' ? guru : murid).length === 0 && (
+                <div className="text-center py-8 text-gray-500 text-xs">Tiada rekod</div>
+              )}
+            </div>
+          </div>
+        </AdminGate>
+      )}
+
       {/* ── MODAL ── */}
       {modal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center"
@@ -405,8 +457,8 @@ export default function SistemIDDelima() {
                     <StatusBadge status={g.status} map={STATUS_GURU} />
                   </div>
 
-                  {/* Password section */}
-                  <div className="mt-4 bg-gray-800 rounded-2xl p-4">
+                  {/* Admin-only controls */}
+                  {isAdmin && <div className="mt-4 bg-gray-800 rounded-2xl p-4">
                     <div className="text-xs font-bold text-violet-400 mb-3 flex items-center gap-2">🔐 Pengurusan Kata Laluan</div>
                     <div className="space-y-2.5 mb-3">
                       <div>
@@ -451,9 +503,9 @@ export default function SistemIDDelima() {
                         🔑 Reset
                       </button>
                     </div>
-                  </div>
+                  </div>}
 
-                  <div className="mt-4">
+                  {isAdmin && <div className="mt-4">
                     <div className="text-xs font-bold text-gray-500 mb-2">Urus Status Akaun</div>
                     <div className="flex gap-2 flex-wrap">
                       {g.status !== 'aktif' && (
@@ -475,10 +527,16 @@ export default function SistemIDDelima() {
                         </button>
                       )}
                     </div>
-                  </div>
+                  </div>}
 
+                  {isAdmin && (
+                    <button onClick={() => deleteRecord('guru', g.id)}
+                      className="w-full mt-3 border border-red-800 text-red-500 py-3 rounded-2xl text-sm font-bold hover:bg-red-900/30 transition-colors">
+                      🗑️ Padam Rekod
+                    </button>
+                  )}
                   <button onClick={() => setModal(null)}
-                    className="w-full mt-5 border border-gray-700 text-gray-400 py-3 rounded-2xl text-sm font-bold">
+                    className="w-full mt-3 border border-gray-700 text-gray-400 py-3 rounded-2xl text-sm font-bold">
                     Tutup
                   </button>
                 </>
@@ -510,7 +568,7 @@ export default function SistemIDDelima() {
                     <StatusBadge status={m.status} map={STATUS_MURID} />
                   </div>
 
-                  <div className="mt-4">
+                  {isAdmin && <div className="mt-4">
                     <div className="text-xs font-bold text-gray-500 mb-2">Urus Status Akaun</div>
                     <div className="flex gap-2 flex-wrap">
                       {m.status !== 'aktif' && (
@@ -532,10 +590,16 @@ export default function SistemIDDelima() {
                         </button>
                       )}
                     </div>
-                  </div>
+                  </div>}
 
+                  {isAdmin && (
+                    <button onClick={() => deleteRecord('murid', m.id)}
+                      className="w-full mt-3 border border-red-800 text-red-500 py-3 rounded-2xl text-sm font-bold hover:bg-red-900/30 transition-colors">
+                      🗑️ Padam Rekod
+                    </button>
+                  )}
                   <button onClick={() => setModal(null)}
-                    className="w-full mt-5 border border-gray-700 text-gray-400 py-3 rounded-2xl text-sm font-bold">
+                    className="w-full mt-3 border border-gray-700 text-gray-400 py-3 rounded-2xl text-sm font-bold">
                     Tutup
                   </button>
                 </>

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import Layout from '../components/Layout'
 import SectionHeader from '../components/SectionHeader'
+import AdminGate from '../components/AdminGate'
+import { useAdmin } from '../contexts/AdminContext'
 
 const BILIK_LIST = [
   { nama: 'Makmal Sains 1',    icon: '🔬', kapasiti: '32 pelajar' },
@@ -54,6 +56,7 @@ const MASA_LIST = [
 const TODAY = new Date().toISOString().slice(0, 10)
 
 export default function TempahanBilik() {
+  const { isAdmin } = useAdmin()
   const [tab, setTab] = useState('dashboard')
   const [tempahan, setTempahan] = useState([])
   const [loading, setLoading] = useState(true)
@@ -111,6 +114,13 @@ export default function TempahanBilik() {
     showToast('✅ Tempahan berjaya dihantar!')
     fetchTempahan()
     setTab('senarai')
+  }
+
+  async function deleteTempahan(id) {
+    await supabase.from('tempahan_bilik').delete().eq('id', id)
+    showToast('🗑️ Rekod berjaya dipadam!')
+    setModal(null)
+    fetchTempahan()
   }
 
   async function updateStatus(id, status) {
@@ -448,7 +458,7 @@ export default function TempahanBilik() {
 
       {/* ── ADMIN ── */}
       {tab === 'admin' && (
-        <>
+        <AdminGate>
           <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5">
             <SectionHeader icon="⏳" title="Menunggu Kelulusan" color="text-amber-400" />
             <div className="space-y-3 mt-4">
@@ -472,6 +482,10 @@ export default function TempahanBilik() {
                       className="flex-1 px-3 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl text-xs font-bold hover:bg-red-500/30 transition-colors">
                       ❌ Tolak
                     </button>
+                    <button onClick={() => deleteTempahan(t.id)}
+                      className="px-3 py-2 bg-red-900/30 text-red-400 border border-red-800/50 rounded-xl text-xs font-bold hover:bg-red-900/60 transition-colors">
+                      🗑️
+                    </button>
                   </div>
                 </div>
               ))}
@@ -488,20 +502,26 @@ export default function TempahanBilik() {
               {tempahan.map(t => {
                 const s = STATUS_CONFIG[t.status] ?? STATUS_CONFIG.pending
                 return (
-                  <div key={t.id} className="flex items-center gap-3 bg-gray-800/50 rounded-xl p-3 cursor-pointer hover:bg-gray-800"
-                    onClick={() => setModal(t)}>
+                  <div key={t.id} className="flex items-center gap-3 bg-gray-800/50 rounded-xl p-3">
                     <div className={`w-2 h-2 rounded-full flex-shrink-0 ${s.dot}`} />
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setModal(t)}>
                       <div className="text-xs font-semibold text-white truncate">{t.guru}</div>
                       <div className="text-xs text-gray-500 truncate">{t.bilik} • {t.tarikh} • {t.masa}</div>
                     </div>
                     <span className={`text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${s.badge}`}>{s.label}</span>
+                    <button onClick={() => deleteTempahan(t.id)}
+                      className="text-xs text-red-500 hover:text-red-400 px-2 py-1 rounded-lg hover:bg-red-900/30 transition-colors flex-shrink-0">
+                      🗑️
+                    </button>
                   </div>
                 )
               })}
+              {tempahan.length === 0 && (
+                <div className="text-center py-8 text-gray-500 text-xs">Tiada rekod</div>
+              )}
             </div>
           </div>
-        </>
+        </AdminGate>
       )}
 
       {/* ── MODAL ── */}
@@ -524,7 +544,7 @@ export default function TempahanBilik() {
                 <span className="text-xs font-bold text-white">{v}</span>
               </div>
             ))}
-            {modal.status === 'pending' && (
+            {modal.status === 'pending' && isAdmin && (
               <div className="flex gap-2 mt-4">
                 <button onClick={() => updateStatus(modal.id, 'approved')}
                   className="flex-1 py-2.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-bold hover:bg-emerald-500/30">
@@ -535,6 +555,12 @@ export default function TempahanBilik() {
                   ❌ Tolak
                 </button>
               </div>
+            )}
+            {isAdmin && (
+              <button onClick={() => deleteTempahan(modal.id)}
+                className="w-full mt-3 border border-red-800 text-red-500 py-2.5 rounded-xl text-sm font-bold hover:bg-red-900/30 transition-colors">
+                🗑️ Padam Rekod
+              </button>
             )}
             <button onClick={() => setModal(null)}
               className="w-full mt-3 border border-gray-700 text-gray-400 py-2.5 rounded-xl text-sm font-bold">
