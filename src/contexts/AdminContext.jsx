@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useEffect } from 'react'
 const AdminContext = createContext(null)
 
 const ADMIN_USER = 'admin'
-const ADMIN_PASS = 'ict2025'
+const ADMIN_PASS = 'ict2026'
 
 export function AdminProvider({ children }) {
   const [isAdmin, setIsAdmin] = useState(() => sessionStorage.getItem('isAdmin') === 'true')
