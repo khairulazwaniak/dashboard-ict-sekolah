@@ -417,7 +417,11 @@ export default function TempahanBilik() {
                   }
                   return (
                     <JadualRow key={slot.masa} slot={slot} bilikList={bilikList}
-                      tempahan={tempahan} tarikh={jadualDate} onBook={() => setTab('tempah')} />
+                      tempahan={tempahan} tarikh={jadualDate} onBook={(bilik, masa) => {
+                        const [mula, tamat] = masa.split('–')
+                        setForm(f => ({ ...f, bilik, tarikh: jadualDate, masa_mula: mula, masa_tamat: tamat }))
+                        setTab('tempah')
+                      }} />
                   )
                 })}
 
@@ -432,7 +436,11 @@ export default function TempahanBilik() {
 
                 {SLOT_PETANG.map(slot => (
                   <JadualRow key={slot.masa} slot={slot} bilikList={bilikList}
-                    tempahan={tempahan} tarikh={jadualDate} onBook={() => setTab('tempah')} />
+                    tempahan={tempahan} tarikh={jadualDate} onBook={(bilik, masa) => {
+                      const [mula, tamat] = masa.split('–')
+                      setForm(f => ({ ...f, bilik, tarikh: jadualDate, masa_mula: mula, masa_tamat: tamat }))
+                      setTab('tempah')
+                    }} />
                 ))}
               </tbody>
             </table>
