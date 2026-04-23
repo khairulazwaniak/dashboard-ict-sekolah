@@ -94,6 +94,8 @@ export default function TempahanBilik() {
   })
 
   const [formBilik, setFormBilik] = useState({ nama: '', icon: '🏫', kapasiti: '30 pelajar' })
+  const [bilikTutup, setBilikTutup] = useState([])
+  const [formTutup, setFormTutup] = useState({ bilik: '', tarikh_mula: TODAY, tarikh_tamat: TODAY, sebab: '' })
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type })
@@ -116,6 +118,39 @@ export default function TempahanBilik() {
     setBilikList(data ?? [])
   }
 
+  async function fetchBilikTutup() {
+    const { data } = await supabase.from('bilik_tutup').select('*').order('tarikh_mula')
+    setBilikTutup(data ?? [])
+  }
+
+  async function tambahTutup() {
+    if (!formTutup.bilik || !formTutup.tarikh_mula || !formTutup.tarikh_tamat) {
+      showToast('Sila lengkapkan maklumat penutupan!', 'error'); return
+    }
+    if (formTutup.tarikh_tamat < formTutup.tarikh_mula) {
+      showToast('Tarikh tamat mestilah selepas tarikh mula!', 'error'); return
+    }
+    const { error } = await supabase.from('bilik_tutup').insert([formTutup])
+    if (error) { showToast('Ralat: ' + error.message, 'error'); return }
+    setFormTutup({ bilik: '', tarikh_mula: TODAY, tarikh_tamat: TODAY, sebab: '' })
+    showToast('🚫 Penutupan bilik berjaya ditetapkan!')
+    fetchBilikTutup()
+  }
+
+  async function hapusTutup(id) {
+    await supabase.from('bilik_tutup').delete().eq('id', id)
+    showToast('✅ Penutupan dibatalkan!')
+    fetchBilikTutup()
+  }
+
+  function getTutupInfo(namaBilik, tarikh) {
+    const norm = s => s?.trim().toLowerCase()
+    return bilikTutup.find(t =>
+      norm(t.bilik) === norm(namaBilik) &&
+      tarikh >= t.tarikh_mula && tarikh <= t.tarikh_tamat
+    ) ?? null
+  }
+
   async function tambahBilik() {
     if (!formBilik.nama) { showToast('Sila masukkan nama bilik!', 'error'); return }
     const { error } = await supabase.from('bilik_khas').insert([formBilik])
@@ -131,7 +166,7 @@ export default function TempahanBilik() {
     fetchBilik()
   }
 
-  useEffect(() => { fetchTempahan(); fetchBilik() }, [])
+  useEffect(() => { fetchTempahan(); fetchBilik(); fetchBilikTutup() }, [])
 
   const pendingCount = tempahan.filter(t => t.status === 'pending').length
   const todayCount   = tempahan.filter(t => t.tarikh === TODAY).length
@@ -163,6 +198,10 @@ export default function TempahanBilik() {
       )
     : null
 
+  const bilikDitutup = form.bilik && form.tarikh
+    ? getTutupInfo(form.bilik, form.tarikh)
+    : null
+
   // End times — same session as mula, after mula
   const availableTamat = (() => {
     if (!form.masa_mula) return []
@@ -177,6 +216,9 @@ export default function TempahanBilik() {
     }
     if (toMins(form.masa_tamat) <= toMins(form.masa_mula)) {
       showToast('Masa tamat mestilah selepas masa mula!', 'error'); return
+    }
+    if (bilikDitutup) {
+      showToast(`🚫 ${form.bilik} ditutup sehingga ${bilikDitutup.tarikh_tamat}!`, 'error'); return
     }
     if (slotKonflik) {
       showToast(`⚠️ Masa ini sudah ditempah oleh ${slotKonflik.guru}!`, 'error'); return
@@ -380,12 +422,16 @@ export default function TempahanBilik() {
                   <th className="px-2 py-3 text-left text-gray-500 font-semibold border-b border-r border-gray-200 sticky left-0 w-20 sm:w-28" style={{ background: '#F9FAFB' }}>
                     Masa
                   </th>
-                  {bilikList.map(b => (
-                    <th key={b.nama} className="px-1 py-2 text-center text-gray-700 font-semibold border-b border-r border-gray-200" style={{ minWidth: 84 }}>
-                      <div className="text-base leading-none">{b.icon}</div>
-                      <div className="text-[10px] leading-tight mt-0.5 px-0.5 line-clamp-2">{b.nama}</div>
-                    </th>
-                  ))}
+                  {bilikList.map(b => {
+                    const tutup = getTutupInfo(b.nama, jadualDate)
+                    return (
+                      <th key={b.nama} className={`px-1 py-2 text-center font-semibold border-b border-r border-gray-200 ${tutup ? 'bg-red-50' : ''}`} style={{ minWidth: 84 }}>
+                        <div className="text-base leading-none">{b.icon}</div>
+                        <div className={`text-[10px] leading-tight mt-0.5 px-0.5 line-clamp-2 ${tutup ? 'text-red-600' : 'text-gray-700'}`}>{b.nama}</div>
+                        {tutup && <div className="text-[9px] text-red-400 font-normal mt-0.5 leading-none">🚫 Tutup</div>}
+                      </th>
+                    )
+                  })}
                 </tr>
               </thead>
               <tbody>
@@ -417,7 +463,8 @@ export default function TempahanBilik() {
                   }
                   return (
                     <JadualRow key={slot.masa} slot={slot} bilikList={bilikList}
-                      tempahan={tempahan} tarikh={jadualDate} onBook={(bilik, masa) => {
+                      tempahan={tempahan} tarikh={jadualDate} getTutupInfo={getTutupInfo}
+                      onBook={(bilik, masa) => {
                         const [mula, tamat] = masa.split('–')
                         setForm(f => ({ ...f, bilik, tarikh: jadualDate, masa_mula: mula, masa_tamat: tamat }))
                         setTab('tempah')
@@ -436,7 +483,8 @@ export default function TempahanBilik() {
 
                 {SLOT_PETANG.map(slot => (
                   <JadualRow key={slot.masa} slot={slot} bilikList={bilikList}
-                    tempahan={tempahan} tarikh={jadualDate} onBook={(bilik, masa) => {
+                    tempahan={tempahan} tarikh={jadualDate} getTutupInfo={getTutupInfo}
+                    onBook={(bilik, masa) => {
                       const [mula, tamat] = masa.split('–')
                       setForm(f => ({ ...f, bilik, tarikh: jadualDate, masa_mula: mula, masa_tamat: tamat }))
                       setTab('tempah')
@@ -518,8 +566,20 @@ export default function TempahanBilik() {
             </div>
           </div>
 
+          {/* Bilik ditutup warning */}
+          {bilikDitutup && (
+            <div className="rounded-xl px-3 py-2.5 text-xs font-semibold bg-red-50 border border-red-200 text-red-700 flex items-start gap-2">
+              <span className="text-base leading-none shrink-0">🚫</span>
+              <div>
+                <div className="font-bold">{form.bilik} ditutup / penyelenggaraan</div>
+                <div className="font-normal mt-0.5">{bilikDitutup.tarikh_mula} → {bilikDitutup.tarikh_tamat}</div>
+                {bilikDitutup.sebab && <div className="font-normal text-red-500 italic mt-0.5">"{bilikDitutup.sebab}"</div>}
+              </div>
+            </div>
+          )}
+
           {/* Durasi + konflik indicator */}
-          {form.masa_mula && form.masa_tamat && (
+          {form.masa_mula && form.masa_tamat && !bilikDitutup && (
             <div className={`rounded-xl px-3 py-2 text-xs font-semibold flex items-center gap-2 ${
               slotKonflik
                 ? 'bg-red-50 border border-red-200 text-red-600'
@@ -545,8 +605,8 @@ export default function TempahanBilik() {
             ℹ️ Permohonan akan disemak oleh pentadbir. Hubungi Guru ICT terus sekiranya terdapat keperluan mendesak.
           </div>
 
-          <button onClick={submitTempahan}
-            className="w-full bg-gradient-to-r from-sky-600 to-cyan-500 text-white py-3.5 rounded-2xl text-sm font-bold shadow-lg hover:opacity-90 transition-opacity">
+          <button onClick={submitTempahan} disabled={!!bilikDitutup}
+            className="w-full bg-gradient-to-r from-sky-600 to-cyan-500 text-white py-3.5 rounded-2xl text-sm font-bold shadow-lg hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed">
             📤 Hantar Permohonan Tempahan
           </button>
         </div>
@@ -667,6 +727,69 @@ export default function TempahanBilik() {
               {tempahan.length === 0 && (
                 <div className="text-center py-8 text-gray-500 text-xs">Tiada rekod</div>
               )}
+            </div>
+          </div>
+
+          {/* Tutup / Penyelenggaraan Bilik */}
+          <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-4">
+            <SectionHeader icon="🚫" title="Penutupan / Penyelenggaraan Bilik" color="text-red-400" />
+
+            {/* Form tambah tutup */}
+            <div className="bg-red-50 border border-red-100 rounded-2xl p-4 space-y-3">
+              <div className="text-xs font-bold text-red-500">➕ Tutup Bilik (Penyelenggaraan / Tidak Boleh Guna)</div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Bilik *</label>
+                <select value={formTutup.bilik} onChange={e => setFormTutup(f => ({ ...f, bilik: e.target.value }))}
+                  className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-red-400">
+                  <option value="">-- Pilih Bilik --</option>
+                  {bilikList.map(b => <option key={b.id} value={b.nama}>{b.icon} {b.nama}</option>)}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Dari Tarikh *</label>
+                  <input type="date" value={formTutup.tarikh_mula}
+                    onChange={e => setFormTutup(f => ({ ...f, tarikh_mula: e.target.value }))}
+                    className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-red-400" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Hingga Tarikh *</label>
+                  <input type="date" value={formTutup.tarikh_tamat}
+                    onChange={e => setFormTutup(f => ({ ...f, tarikh_tamat: e.target.value }))}
+                    className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-red-400" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Sebab / Catatan</label>
+                <input value={formTutup.sebab} onChange={e => setFormTutup(f => ({ ...f, sebab: e.target.value }))}
+                  placeholder="Contoh: Penyelenggaraan projector, Pertandingan..."
+                  className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-400" />
+              </div>
+              <button onClick={tambahTutup}
+                className="w-full bg-red-500 hover:bg-red-400 text-white py-2.5 rounded-xl text-xs font-bold transition-colors">
+                🚫 Tetapkan Penutupan
+              </button>
+            </div>
+
+            {/* Senarai penutupan aktif */}
+            <div className="space-y-2">
+              {bilikTutup.length === 0 && (
+                <div className="text-center py-4 text-xs text-gray-400">Tiada penutupan bilik ditetapkan</div>
+              )}
+              {bilikTutup.map(t => (
+                <div key={t.id} className="flex items-start gap-3 bg-red-50 border border-red-100 rounded-xl p-3">
+                  <span className="text-lg leading-none mt-0.5">🚫</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-bold text-red-700">{t.bilik}</div>
+                    <div className="text-xs text-red-500 mt-0.5">{t.tarikh_mula} → {t.tarikh_tamat}</div>
+                    {t.sebab && <div className="text-xs text-gray-500 italic mt-0.5">"{t.sebab}"</div>}
+                  </div>
+                  <button onClick={() => hapusTutup(t.id)}
+                    className="text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-red-100 transition-colors shrink-0">
+                    🗑️
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -891,7 +1014,7 @@ function nowMins() {
   return n.getHours() * 60 + n.getMinutes()
 }
 
-function JadualRow({ slot, bilikList, tempahan, tarikh, onBook }) {
+function JadualRow({ slot, bilikList, tempahan, tarikh, getTutupInfo, onBook }) {
   const [startStr, endStr] = slot.masa.split('–')
   const isNow = tarikh === TODAY &&
     nowMins() >= toMins(startStr) && nowMins() < toMins(endStr)
@@ -910,6 +1033,16 @@ function JadualRow({ slot, bilikList, tempahan, tarikh, onBook }) {
         <div className="text-[10px] text-gray-400 leading-none">–{endStr}</div>
       </td>
       {bilikList.map(bilik => {
+        const tutup = getTutupInfo(bilik.nama, tarikh)
+        if (tutup) {
+          return (
+            <td key={bilik.nama} className="p-1 border-b border-r border-gray-200">
+              <div className="rounded-lg min-h-[44px] flex items-center justify-center bg-red-50 border border-red-100">
+                <span className="text-[10px] text-red-300">🚫</span>
+              </div>
+            </td>
+          )
+        }
         const booking = tempahan.find(t =>
           t.bilik?.trim().toLowerCase() === bilik.nama?.trim().toLowerCase() &&
           t.tarikh === tarikh && slotDalamRange(t.masa, slot.masa)
