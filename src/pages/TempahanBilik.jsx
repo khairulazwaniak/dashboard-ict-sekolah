@@ -338,27 +338,27 @@ export default function TempahanBilik() {
       {/* ── JADUAL MASA ── */}
       {tab === 'jadual' && (
         <>
-          {/* Print button */}
-          <div className="flex justify-end no-print">
+          {/* Print button — desktop only */}
+          <div className="hidden sm:flex justify-end no-print">
             <button onClick={() => window.print()}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border border-gray-200 text-gray-600 hover:border-sky-500 hover:text-sky-600 transition-colors">
               🖨️ Print Jadual
             </button>
           </div>
 
-          {/* Date picker */}
-          <div className="flex items-center gap-3">
-            <label className="text-xs font-semibold text-sky-400">Pilih Tarikh:</label>
+          {/* Date picker — stacks on mobile */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <label className="text-xs font-semibold text-sky-400 shrink-0">Pilih Tarikh:</label>
             <input type="date" value={jadualDate}
               onChange={e => setJadualDate(e.target.value)}
-              className="bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-indigo-400" />
-            <span className="text-xs text-gray-500">
+              className="bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-indigo-400 w-full sm:w-auto" />
+            <span className="text-xs text-gray-400">
               {new Date(jadualDate).toLocaleDateString('ms-MY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
             </span>
           </div>
 
           {/* Legend */}
-          <div className="flex gap-4 text-xs">
+          <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs">
             {[
               { color: 'bg-emerald-100 border-emerald-300', label: 'Lulus' },
               { color: 'bg-amber-100 border-amber-300',     label: 'Tunggu' },
@@ -372,18 +372,18 @@ export default function TempahanBilik() {
             ))}
           </div>
 
-          {/* Timetable — scroll horizontal */}
-          <div className="overflow-x-auto rounded-2xl border border-gray-200">
-            <table className="w-full min-w-[700px] border-collapse text-xs">
+          {/* Timetable — full-width on mobile, rounded on desktop */}
+          <div className="overflow-x-auto -mx-4 sm:mx-0 border-y sm:border sm:rounded-2xl border-gray-200">
+            <table className="border-collapse text-xs" style={{ width: '100%', minWidth: `${Math.max(400, bilikList.length * 88 + 88)}px` }}>
               <thead>
                 <tr style={{ background: '#F9FAFB' }}>
-                  <th className="p-3 text-left text-gray-500 font-semibold border-b border-r border-gray-200 w-32 sticky left-0" style={{ background: '#F9FAFB' }}>
+                  <th className="px-2 py-3 text-left text-gray-500 font-semibold border-b border-r border-gray-200 sticky left-0 w-20 sm:w-28" style={{ background: '#F9FAFB' }}>
                     Masa
                   </th>
                   {bilikList.map(b => (
-                    <th key={b.nama} className="p-2 text-center text-gray-700 font-semibold border-b border-r border-gray-200 min-w-[100px]">
-                      <div>{b.icon}</div>
-                      <div className="text-xs leading-tight mt-0.5">{b.nama}</div>
+                    <th key={b.nama} className="px-1 py-2 text-center text-gray-700 font-semibold border-b border-r border-gray-200" style={{ minWidth: 84 }}>
+                      <div className="text-base leading-none">{b.icon}</div>
+                      <div className="text-[10px] leading-tight mt-0.5 px-0.5 line-clamp-2">{b.nama}</div>
                     </th>
                   ))}
                 </tr>
@@ -398,17 +398,18 @@ export default function TempahanBilik() {
                   </td>
                 </tr>
 
-                {SLOT_PAGI.map((slot, i) => {
+                {SLOT_PAGI.map((slot) => {
                   if (slot.rehat) {
                     return (
-                      <tr key="rehat" style={{ background: 'rgba(74,158,255,0.03)' }}>
-                        <td className="px-3 py-2 font-bold border-b border-r border-gray-200 sticky left-0 text-blue-600"
+                      <tr key="rehat">
+                        <td className="px-2 py-2 text-xs font-bold border-b border-r border-gray-200 sticky left-0 text-blue-500"
                           style={{ background: '#EFF6FF' }}>
-                          09:50–10:10
+                          <div className="leading-tight">09:50</div>
+                          <div className="leading-tight">10:10</div>
                         </td>
                         <td colSpan={bilikList.length}
-                          className="text-center py-2 border-b border-gray-200 font-bold"
-                          style={{ background: 'rgba(74,158,255,0.05)', color: '#4A9EFF' }}>
+                          className="text-center py-2 border-b border-gray-200 text-xs font-bold tracking-wide"
+                          style={{ background: 'rgba(74,158,255,0.06)', color: '#4A9EFF' }}>
                           — WAKTU REHAT —
                         </td>
                       </tr>
@@ -416,9 +417,7 @@ export default function TempahanBilik() {
                   }
                   return (
                     <JadualRow key={slot.masa} slot={slot} bilikList={bilikList}
-                      tempahan={tempahan} tarikh={jadualDate} onBook={(bilik, masa) => {
-                        setTab('tempah')
-                      }} />
+                      tempahan={tempahan} tarikh={jadualDate} onBook={() => setTab('tempah')} />
                   )
                 })}
 
@@ -433,12 +432,18 @@ export default function TempahanBilik() {
 
                 {SLOT_PETANG.map(slot => (
                   <JadualRow key={slot.masa} slot={slot} bilikList={bilikList}
-                    tempahan={tempahan} tarikh={jadualDate} onBook={(bilik, masa) => {
-                      setTab('tempah')
-                    }} />
+                    tempahan={tempahan} tarikh={jadualDate} onBook={() => setTab('tempah')} />
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Print button — mobile bottom */}
+          <div className="flex sm:hidden no-print">
+            <button onClick={() => window.print()}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold border border-gray-200 text-gray-600 hover:border-sky-500 hover:text-sky-600 transition-colors">
+              🖨️ Print Jadual
+            </button>
           </div>
         </>
       )}
@@ -873,13 +878,28 @@ function ModalTempahan({ modal, isAdmin, bilikList, STATUS_CONFIG, TODAY, PAGI_S
   )
 }
 
+function nowMins() {
+  const n = new Date()
+  return n.getHours() * 60 + n.getMinutes()
+}
+
 function JadualRow({ slot, bilikList, tempahan, tarikh, onBook }) {
+  const [startStr, endStr] = slot.masa.split('–')
+  const isNow = tarikh === TODAY &&
+    nowMins() >= toMins(startStr) && nowMins() < toMins(endStr)
+
   return (
-    <tr className="hover:bg-white/[0.02] transition-colors">
-      <td className="px-3 py-2 font-mono font-semibold border-b border-r border-gray-200 sticky left-0 text-gray-600 text-xs"
-        style={{ background: '#FFFFFF' }}>
-        <span className="text-gray-600 mr-1">{slot.label}</span>
-        {slot.masa}
+    <tr className={isNow ? 'bg-sky-50' : 'hover:bg-gray-50 transition-colors'}>
+      <td className={`px-2 py-2 border-b border-r border-gray-200 sticky left-0 ${
+        isNow ? 'bg-sky-50' : 'bg-white'
+      }`}>
+        <div className={`text-[10px] font-bold leading-none ${isNow ? 'text-sky-600' : 'text-gray-400'}`}>
+          {slot.label}{isNow ? ' ←' : ''}
+        </div>
+        <div className={`text-xs font-semibold mt-0.5 leading-tight ${isNow ? 'text-sky-700' : 'text-gray-600'}`}>
+          {startStr}
+        </div>
+        <div className="text-[10px] text-gray-400 leading-none">–{endStr}</div>
       </td>
       {bilikList.map(bilik => {
         const booking = tempahan.find(t =>
@@ -890,7 +910,7 @@ function JadualRow({ slot, bilikList, tempahan, tarikh, onBook }) {
           return (
             <td key={bilik.nama} className="p-1 border-b border-r border-gray-200 text-center">
               <button onClick={() => onBook(bilik.nama, slot.masa)}
-                className="w-full h-8 rounded-lg text-xs text-gray-600 hover:bg-sky-900/30 hover:text-sky-400 transition-all">
+                className="w-full min-h-[44px] rounded-lg text-base text-gray-300 hover:bg-sky-50 hover:text-sky-400 active:bg-sky-100 transition-all flex items-center justify-center">
                 +
               </button>
             </td>
@@ -900,16 +920,18 @@ function JadualRow({ slot, bilikList, tempahan, tarikh, onBook }) {
         const isPending  = booking.status === 'pending'
         return (
           <td key={bilik.nama} className="p-1 border-b border-r border-gray-200">
-            <div className={`rounded-lg px-1.5 py-1 text-center border ${
-              isApproved ? 'bg-emerald-50 border-emerald-200 text-emerald-800' :
-              isPending  ? 'bg-amber-50 border-amber-200 text-amber-800' :
-                           'bg-red-50 border-red-200 text-red-800'
+            <div className={`rounded-lg px-1 py-1.5 text-center border min-h-[44px] flex flex-col items-center justify-center ${
+              isApproved ? 'bg-emerald-50 border-emerald-200' :
+              isPending  ? 'bg-amber-50 border-amber-200' :
+                           'bg-red-50 border-red-200'
             }`}>
-              <div className="text-xs font-bold truncate">{booking.guru}</div>
-              <div className={`text-xs mt-0.5 ${
-                isApproved ? 'text-emerald-600' : isPending ? 'text-amber-600' : 'text-red-600'
+              <div className={`text-[10px] font-bold leading-tight line-clamp-2 w-full text-center ${
+                isApproved ? 'text-emerald-800' : isPending ? 'text-amber-800' : 'text-red-800'
+              }`}>{booking.guru}</div>
+              <div className={`text-[10px] mt-0.5 font-medium ${
+                isApproved ? 'text-emerald-600' : isPending ? 'text-amber-500' : 'text-red-500'
               }`}>
-                {isApproved ? '✓ Lulus' : isPending ? '⏳ Tunggu' : '✗ Tolak'}
+                {isApproved ? '✓' : isPending ? '⏳' : '✗'}
               </div>
             </div>
           </td>
