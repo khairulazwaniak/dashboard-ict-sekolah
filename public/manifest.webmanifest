@@ -1,0 +1,18 @@
+{
+  "name": "Dashboard ICT Sekolah",
+  "short_name": "ICT Dashboard",
+  "description": "Sistem pengurusan ICT sekolah - tempahan bilik, rekod peralatan, dan laporan",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1e1b4b",
+  "theme_color": "#4F46E5",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
